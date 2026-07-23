@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — imar source</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --black:#000000;--white:#FFFFFF;--gray-light:#f5f5f5;--gray-mid:#e0e0e0;
+  --gray-text:#888888;--gold:#D4AF37;
+  --serif:'Playfair Display',Georgia,serif;--sans:'Montserrat',Helvetica,sans-serif;
+  --ease:.4s cubic-bezier(.25,.46,.45,.94);
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--white);color:var(--black);font-size:13px;letter-spacing:.04em;overflow-x:hidden}
+
+/* ── LOGIN ─────────────────────────────────────────────── */
+#login-screen{
+  display:flex;position:fixed;inset:0;background:var(--white);z-index:2000;
+  align-items:center;justify-content:center;flex-direction:column;gap:20px;
+}
+#login-screen.hidden{display:none}
+.al-title{font-family:var(--serif);font-size:32px;font-style:italic;text-align:center}
+.al-sub{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:var(--gray-text);margin-bottom:8px}
+.al-field{width:320px}
+.al-field label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);display:block;margin-bottom:6px}
+.al-field input{width:100%;border:none;border-bottom:1px solid var(--gray-mid);background:transparent;font-family:var(--sans);font-size:14px;letter-spacing:.04em;color:var(--black);padding:10px 4px;outline:none}
+.al-field input:focus{border-bottom-color:var(--black)}
+.btn-primary{background:var(--black);color:var(--white);border:none;font-family:var(--sans);font-size:9px;letter-spacing:.25em;text-transform:uppercase;padding:16px 40px;cursor:pointer;width:320px;margin-top:8px;transition:background var(--ease)}
+.btn-primary:hover{background:#333}
+.btn-primary:disabled{background:var(--gray-mid);cursor:not-allowed}
+#login-error{font-size:10px;color:#c0392b;letter-spacing:.05em;min-height:16px;text-align:center;width:320px}
+
+/* ── ADMIN PANEL ───────────────────────────────────────── */
+#admin-panel{display:none}
+#admin-panel.open{display:block}
+.ap-header{border-bottom:1px solid var(--black);padding:28px 60px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--white);z-index:10}
+.ap-title{font-family:var(--serif);font-size:22px;font-weight:400}
+.ap-title span{font-style:italic;color:var(--gray-text);font-size:13px;margin-left:12px}
+.ap-user{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--gray-text)}
+.ap-tabs{display:flex;gap:0;border-bottom:1px solid var(--gray-mid);margin:0 60px}
+.ap-tab{background:none;border:none;border-bottom:2px solid transparent;font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:16px 24px;cursor:pointer;color:var(--gray-text);transition:all var(--ease)}
+.ap-tab.active{border-bottom-color:var(--black);color:var(--black)}
+.ap-content{padding:48px 60px;max-width:700px}
+.ap-pane{display:none}
+.ap-pane.active{display:block}
+.ap-sec-title{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:8px}
+.ap-sec-sub{font-size:10px;letter-spacing:.05em;color:var(--gray-text);margin-bottom:32px;line-height:1.7}
+.form-grid{display:flex;flex-direction:column;gap:24px}
+.ff label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);display:block;margin-bottom:6px}
+.ff input,.ff textarea,.ff select{width:100%;border:none;border-bottom:1px solid var(--gray-mid);background:transparent;font-family:var(--sans);font-size:14px;letter-spacing:.04em;color:var(--black);padding:10px 4px;outline:none;transition:border-color var(--ease);resize:none}
+.ff select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 4px center;padding-right:20px}
+.ff input:focus,.ff textarea:focus,.ff select:focus{border-bottom-color:var(--black)}
+.ff .hint{font-size:9px;color:var(--gray-text);margin-top:6px;line-height:1.5}
+.btn-submit{background:var(--black);color:var(--white);border:none;font-family:var(--sans);font-size:9px;letter-spacing:.25em;text-transform:uppercase;padding:16px 32px;cursor:pointer;transition:background var(--ease);margin-top:8px}
+.btn-submit:hover{background:#333}
+.btn-submit:disabled{background:var(--gray-mid);cursor:not-allowed}
+.ap-status{font-size:10px;letter-spacing:.1em;padding:10px 0;min-height:32px;color:var(--gray-text)}
+.ap-status.ok{color:#2d7a2d}
+.ap-status.error{color:#c0392b}
+#ap-logout{background:none;border:1px solid var(--gray-mid);font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:10px 20px;cursor:pointer;transition:all var(--ease)}
+#ap-logout:hover{border-color:var(--black)}
+
+/* Sub-tabs */
+.sub-tabs{display:flex;gap:10px;margin-bottom:32px}
+.sub-tab{background:none;border:1px solid var(--gray-mid);font-family:var(--sans);font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:all var(--ease);color:var(--gray-text)}
+.sub-tab.active{background:var(--black);color:var(--white);border-color:var(--black)}
+.sub-pane{display:none}
+.sub-pane.active{display:block}
+
+/* Listas admin */
+.admin-list{display:flex;flex-direction:column;gap:0;margin-top:24px;border-top:1px solid var(--gray-mid)}
+.admin-list-row{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--gray-mid)}
+.admin-list-thumb{width:44px;height:44px;flex-shrink:0;background:var(--gray-light);border:1px solid var(--gray-mid);overflow:hidden}
+.admin-list-info{flex:1;min-width:0}
+.admin-list-name{font-family:var(--serif);font-size:14px}
+.admin-list-meta{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-text);margin-top:2px}
+.btn-delete{border:1px solid #c0392b;background:none;color:#c0392b;font-family:var(--sans);font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:8px 14px;cursor:pointer;transition:all var(--ease);flex-shrink:0}
+.btn-delete:hover{background:#c0392b;color:var(--white)}
+.admin-sub-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);margin-top:40px;margin-bottom:6px}
+
+/* Toast */
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--black);color:var(--white);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:14px 28px;opacity:0;transition:all .4s;pointer-events:none;z-index:9999;white-space:nowrap}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:900px){
+  .ap-header,.ap-tabs{padding-left:24px;padding-right:24px}
+  .ap-content{padding:32px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA DE LOGIN ══════════════════════════════════════ -->
+<div id="login-screen">
+  <div>
+    <div class="al-title"><em>imar</em> source</div>
+    <div class="al-sub" style="margin-top:8px">Panel de administración</div>
+  </div>
+  <div class="al-field">
+    <label>Correo electrónico</label>
+    <input type="email" id="login-email" autocomplete="username"
+           onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()">
+  </div>
+  <div class="al-field">
+    <label>Contraseña</label>
+    <input type="password" id="login-pwd" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')doLogin()">
+  </div>
+  <div id="login-error"></div>
+  <button class="btn-primary" id="btn-login" onclick="doLogin()">Acceder</button>
+</div>
+
+<!-- ══ PANEL ADMIN ════════════════════════════════════════════ -->
+<div id="admin-panel">
+  <div class="ap-header">
+    <div>
+      <div class="ap-title">Panel Admin <span>imar source</span></div>
+      <div class="ap-user" id="ap-user-email"></div>
+    </div>
+    <button id="ap-logout" onclick="doLogout()">Cerrar sesión</button>
+  </div>
+
+  <div class="ap-tabs">
+    <button class="ap-tab active" onclick="switchTab('modelos',this)">Modelos</button>
+    <button class="ap-tab" onclick="switchTab('portada',this)">Editar Portada</button>
+    <button class="ap-tab" onclick="switchTab('eventos',this)">Carrusel / Eventos</button>
+  </div>
+
+  <div class="ap-content">
+
+    <!-- ── TAB MODELOS ──────────────────────────────────────── -->
+    <div class="ap-pane active" id="tab-modelos">
+      <div class="ap-sec-title">Modelos</div>
+      <div class="ap-sec-sub">Cada modelo tiene un único perfil. Crealo una vez y después sumale fotos a su galería personal.</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="switchSubTab('crear',this)">Crear Perfil de Modelo</button>
+        <button class="sub-tab" onclick="switchSubTab('foto',this)">Subir Foto a Modelo existente</button>
+        <button class="sub-tab" onclick="switchSubTab('gestionar',this)">Gestionar / Eliminar</button>
+      </div>
+
+      <!-- Crear perfil -->
+      <div class="sub-pane active" id="sub-crear">
+        <div class="form-grid">
+          <div class="ff"><label>Nombre</label><input type="text" id="m-name" placeholder="Valentina López"></div>
+          <div class="ff"><label>Código único</label><input type="text" id="m-code" placeholder="#KM01"></div>
+          <div class="ff"><label>Descripción</label><textarea id="m-desc" rows="3" placeholder="Breve texto editorial sobre la modelo."></textarea></div>
+          <div class="ff">
+            <label>Embed de Telegram — Foto de perfil</label>
+            <textarea id="m-embed" rows="5" placeholder='&lt;script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="TuCanal/123" data-width="100%"&gt;&lt;/script&gt;'></textarea>
+            <div class="hint">Abrí el post en Telegram Web → Compartir → Embed → pegá el código completo.</div>
+          </div>
+          <div>
+            <button class="btn-submit" id="btn-pub-m" onclick="publishModel()">Crear Perfil</button>
+            <div class="ap-status" id="status-m"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subir foto -->
+      <div class="sub-pane" id="sub-foto">
+        <div class="form-grid">
+          <div class="ff">
+            <label>Modelo</label>
+            <select id="f-modelo" onchange="renderAdminFotosList(this.value)"><option value="">Seleccioná una modelo…</option></select>
+          </div>
+          <div class="ff">
+            <label>Embed de Telegram — Nueva foto</label>
+            <textarea id="f-embed" rows="5" placeholder='&lt;script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="TuCanal/456" data-width="100%"&gt;&lt;/script&gt;'></textarea>
+            <div class="hint">Esta foto se suma a la galería del perfil seleccionado.</div>
+          </div>
+          <div>
+            <button class="btn-submit" id="btn-pub-f" onclick="uploadFoto()">Subir Foto</button>
+            <div class="ap-status" id="status-f"></div>
+          </div>
+        </div>
+        <div class="admin-sub-label">Fotos de esta modelo</div>
+        <div class="admin-list" id="admin-fotos-list"></div>
+        <div id="admin-fotos-empty" class="ap-status">Seleccioná una modelo para ver su galería.</div>
+      </div>
+
+      <!-- Gestionar / Eliminar -->
+      <div class="sub-pane" id="sub-gestionar">
+        <div class="ap-sec-sub" style="margin-bottom:8px">Eliminar un perfil borra también todas las fotos de su galería. Esta acción no se puede deshacer.</div>
+        <div class="admin-list" id="admin-modelos-list"></div>
+        <div id="admin-modelos-empty" class="ap-status" style="display:none">Todavía no hay modelos creadas.</div>
+      </div>
+    </div>
+
+    <!-- ── TAB PORTADA ──────────────────────────────────────── -->
+    <div class="ap-pane" id="tab-portada">
+      <div class="ap-sec-title">Portada de la Temporada</div>
+      <div class="ap-sec-sub">La imagen y el titular que aparecen al inicio del sitio. Actualizalos cada mes o temporada.</div>
+      <div class="form-grid">
+        <div class="ff">
+          <label>URL de la imagen de fondo</label>
+          <input type="url" id="p-imagen" placeholder="https://…/portada.jpg">
+          <div class="hint">Subí la foto a ImgBB, Cloudinary o Telegram y pegá el link directo. Se recomienda orientación retrato.</div>
+        </div>
+        <div class="ff"><label>Titular de la temporada</label><input type="text" id="p-titular" placeholder="Edición Primavera / Verano"></div>
+        <div class="ff"><label>Subtítulo</label><input type="text" id="p-subtitulo" placeholder="Las tendencias que marcan la temporada."></div>
+        <div>
+          <button class="btn-submit" id="btn-pub-p" onclick="savePortada()">Guardar Portada</button>
+          <div class="ap-status" id="status-p"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB EVENTOS ──────────────────────────────────────── -->
+    <div class="ap-pane" id="tab-eventos">
+      <div class="ap-sec-title">Nuevo Evento</div>
+      <div class="ap-sec-sub">Completá los datos para agregar el evento al carrusel y al ticker.</div>
+      <div class="form-grid">
+        <div class="ff"><label>Título del evento</label><input type="text" id="e-title" placeholder="Kanime 2025"></div>
+        <div class="ff"><label>Fecha</label><input type="date" id="e-date"></div>
+        <div class="ff">
+          <label>URL del banner</label>
+          <input type="url" id="e-banner" placeholder="https://…/banner.jpg">
+          <div class="hint">Subí la imagen a ImgBB, Cloudinary u otro hosting gratuito y pegá el enlace directo.</div>
+        </div>
+        <div class="ff">
+          <label>Descripción del evento</label>
+          <textarea id="e-desc" rows="5" placeholder="Contá de qué trata el evento, horarios, lugar, etc."></textarea>
+        </div>
+        <div>
+          <button class="btn-submit" id="btn-pub-e" onclick="publishEvent()">Publicar Evento</button>
+          <div class="ap-status" id="status-e"></div>
+        </div>
+      </div>
+      <div class="admin-sub-label">Eventos cargados</div>
+      <div class="admin-list" id="admin-eventos-list"></div>
+      <div id="admin-eventos-empty" class="ap-status" style="display:none">Todavía no hay eventos cargados.</div>
+    </div>
+
+  </div><!-- /ap-content -->
+</div><!-- /admin-panel -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CONFIG — credenciales de Supabase (solo en admin.html)
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL = "https://lmxpbgvbxvmnlcntovdo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_IRXmidh-ipHtdPMH4-O-iA_dQnnuZN6";
+const PORTADA_ID   = 1;
+
+// ─── ESTADO ────────────────────────────────────────────────
+let sb         = null;
+let allModels  = [];
+let allFotos   = [];
+let allEvents  = [];
+let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
+let toastTimer;
+
+// ════════════════════════════════════════════════════════════
+//  AUTH — Supabase Auth (email + password)
+// ════════════════════════════════════════════════════════════
+function initSB() {
+  if (!sb) sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+
+async function doLogin() {
+  const email = document.getElementById("login-email").value.trim();
+  const pwd   = document.getElementById("login-pwd").value;
+  const errEl = document.getElementById("login-error");
+  const btn   = document.getElementById("btn-login");
+  if (!email || !pwd) { errEl.textContent = "Completá todos los campos."; return; }
+  btn.disabled = true; errEl.textContent = "Verificando…";
+  initSB();
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
+  if (error) {
+    errEl.textContent = "Credenciales incorrectas.";
+    btn.disabled = false;
+    return;
+  }
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("admin-panel").classList.add("open");
+  document.getElementById("ap-user-email").textContent = data.user.email;
+  await loadData();
+  populateModelSelect();
+  fillPortadaForm();
+  renderAdminModelosList();
+  renderAdminEventosList();
+}
+
+async function doLogout() {
+  initSB();
+  await sb.auth.signOut();
+  location.reload();
+}
+
+// Al cargar: verificar sesión activa
+window.addEventListener("DOMContentLoaded", async () => {
+  initSB();
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    document.getElementById("login-screen").classList.add("hidden");
+    document.getElementById("admin-panel").classList.add("open");
+    document.getElementById("ap-user-email").textContent = data.session.user.email;
+    await loadData();
+    populateModelSelect();
+    fillPortadaForm();
+    renderAdminModelosList();
+    renderAdminEventosList();
+  }
+});
+
+// ════════════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const results = await Promise.allSettled([
+      sb.from("modelos").select("*").order("likes_mes", { ascending: false }),
+      sb.from("eventos").select("*").order("fecha_evento", { ascending: true }),
+      sb.from("fotos").select("*").order("creado_en", { ascending: true }),
+      sb.from("portada").select("*").eq("id", PORTADA_ID).maybeSingle(),
+    ]);
+    const [mRes, eRes, fRes, pRes] = results;
+    if (mRes.status === "fulfilled" && mRes.value.data) allModels  = mRes.value.data;
+    if (eRes.status === "fulfilled" && eRes.value.data) allEvents  = eRes.value.data;
+    if (fRes.status === "fulfilled" && fRes.value.data) allFotos   = fRes.value.data;
+    if (pRes.status === "fulfilled" && pRes.value.data) heroPortada = pRes.value.data;
+  } catch(e) { console.warn("Error Supabase:", e); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TABS / SUB-TABS
+// ════════════════════════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll(".ap-tab").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".ap-pane").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("tab-"+name).classList.add("active");
+  if (name === "modelos") { populateModelSelect(); renderAdminModelosList(); }
+  if (name === "portada") fillPortadaForm();
+  if (name === "eventos") renderAdminEventosList();
+}
+function switchSubTab(name, btn) {
+  document.querySelectorAll(".sub-tab").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".sub-pane").forEach(p=>p.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("sub-"+name).classList.add("active");
+  if (name === "foto") { populateModelSelect(); renderAdminFotosList(document.getElementById("f-modelo").value); }
+  if (name === "gestionar") renderAdminModelosList();
+}
+
+// ════════════════════════════════════════════════════════════
+//  PORTADA
+// ════════════════════════════════════════════════════════════
+function fillPortadaForm() {
+  const imgEl = document.getElementById("p-imagen");
+  if (!imgEl) return;
+  imgEl.value = heroPortada.imagen_url || "";
+  document.getElementById("p-titular").value   = heroPortada.titular   || "";
+  document.getElementById("p-subtitulo").value = heroPortada.subtitulo || "";
+}
+
+async function savePortada() {
+  const st  = document.getElementById("status-p");
+  const btn = document.getElementById("btn-pub-p");
+  const imagen_url = document.getElementById("p-imagen").value.trim();
+  const titular    = document.getElementById("p-titular").value.trim();
+  const subtitulo  = document.getElementById("p-subtitulo").value.trim();
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("portada").upsert([{
+    id: PORTADA_ID, imagen_url, titular, subtitulo
+  }]).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  heroPortada = data[0];
+  setSt(st,"✓ Portada actualizada.","ok");
+  btn.disabled = false;
+}
+
+// ════════════════════════════════════════════════════════════
+//  EVENTOS
+// ════════════════════════════════════════════════════════════
+async function publishEvent() {
+  const st  = document.getElementById("status-e");
+  const btn = document.getElementById("btn-pub-e");
+  const titulo      = document.getElementById("e-title").value.trim();
+  const fecha       = document.getElementById("e-date").value;
+  const banner_url  = document.getElementById("e-banner").value.trim();
+  const descripcion = document.getElementById("e-desc").value.trim();
+  if (!titulo) { setSt(st,"El título es obligatorio.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("eventos").insert([{
+    titulo, fecha_evento: fecha||null, banner_url, descripcion
+  }]).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  allEvents.push(data[0]);
+  allEvents.sort((a,b)=>new Date(a.fecha_evento)-new Date(b.fecha_evento));
+  document.getElementById("e-title").value  = "";
+  document.getElementById("e-date").value   = "";
+  document.getElementById("e-banner").value = "";
+  document.getElementById("e-desc").value   = "";
+  setSt(st,`✓ Evento "${titulo}" publicado.`,"ok");
+  btn.disabled = false;
+  renderAdminEventosList();
+}
+
+function renderAdminEventosList() {
+  const list  = document.getElementById("admin-eventos-list");
+  const empty = document.getElementById("admin-eventos-empty");
+  if (!list) return;
+  if (!allEvents.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  list.innerHTML = allEvents.map(ev => {
+    const d = ev.fecha_evento ? new Date(ev.fecha_evento+"T00:00:00").toLocaleDateString("es-AR") : "Sin fecha";
+    const thumb = ev.banner_url ? `<img src="${ev.banner_url}" style="width:100%;height:100%;object-fit:cover">` : "";
+    return `
+    <div class="admin-list-row">
+      <div class="admin-list-thumb">${thumb}</div>
+      <div class="admin-list-info">
+        <div class="admin-list-name">${ev.titulo}</div>
+        <div class="admin-list-meta">${d}</div>
+      </div>
+      <button class="btn-delete" onclick="deleteEvent('${ev.id}','${ev.titulo.replace(/'/g,"\\'")}')">Eliminar</button>
+    </div>`;
+  }).join("");
+}
+
+async function deleteEvent(id, titulo) {
+  if (!confirm(`¿Eliminar el evento "${titulo}"? No se puede deshacer.`)) return;
+  const { error } = await sb.from("eventos").delete().eq("id", id);
+  if (error) { showToast("Error al eliminar: "+error.message); return; }
+  allEvents = allEvents.filter(ev => String(ev.id) !== String(id));
+  showToast(`Evento "${titulo}" eliminado`);
+  renderAdminEventosList();
+}
+
+// ════════════════════════════════════════════════════════════
+//  MODELOS
+// ════════════════════════════════════════════════════════════
+async function publishModel() {
+  const st  = document.getElementById("status-m");
+  const btn = document.getElementById("btn-pub-m");
+  const nombre      = document.getElementById("m-name").value.trim();
+  const codigo      = document.getElementById("m-code").value.trim();
+  const descripcion = document.getElementById("m-desc").value.trim();
+  const embed       = document.getElementById("m-embed").value.trim();
+  if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("modelos").insert([{
+    nombre, codigo, descripcion, foto_perfil_embed: embed, likes_mes: 0, creado_en: new Date().toISOString()
+  }]).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  allModels.push(data[0]);
+  allModels.sort((a,b)=>(b.likes_mes||0)-(a.likes_mes||0));
+  document.getElementById("m-name").value  = "";
+  document.getElementById("m-code").value  = "";
+  document.getElementById("m-desc").value  = "";
+  document.getElementById("m-embed").value = "";
+  setSt(st,`✓ Perfil de "${nombre}" creado correctamente.`,"ok");
+  btn.disabled = false;
+  populateModelSelect();
+  renderAdminModelosList();
+}
+
+function populateModelSelect() {
+  const sel = document.getElementById("f-modelo");
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Seleccioná una modelo…</option>' +
+    allModels.map(m => `<option value="${m.id}">${m.nombre} — ${m.codigo}</option>`).join("");
+  if (current) sel.value = current;
+}
+
+async function uploadFoto() {
+  const st       = document.getElementById("status-f");
+  const btn      = document.getElementById("btn-pub-f");
+  const modeloId = document.getElementById("f-modelo").value;
+  const embed    = document.getElementById("f-embed").value.trim();
+  if (!modeloId) { setSt(st,"Seleccioná una modelo.","error"); return; }
+  if (!embed)    { setSt(st,"Pegá el embed de la foto.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("fotos").insert([{
+    modelo_id: modeloId, embed_code: embed, creado_en: new Date().toISOString()
+  }]).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  allFotos.push(data[0]);
+  document.getElementById("f-embed").value = "";
+  const m = allModels.find(x=>String(x.id)===String(modeloId));
+  setSt(st,`✓ Foto agregada a la galería de "${m?m.nombre:'la modelo'}".`,"ok");
+  btn.disabled = false;
+  renderAdminFotosList(modeloId);
+}
+
+function renderAdminFotosList(modeloId) {
+  const list  = document.getElementById("admin-fotos-list");
+  const empty = document.getElementById("admin-fotos-empty");
+  if (!list) return;
+  if (!modeloId) {
+    list.innerHTML = ""; empty.style.display = "block";
+    empty.textContent = "Seleccioná una modelo para ver su galería."; return;
+  }
+  const fotos = allFotos.filter(f => String(f.modelo_id) === String(modeloId));
+  if (!fotos.length) {
+    list.innerHTML = ""; empty.style.display = "block";
+    empty.textContent = "Esta modelo todavía no tiene fotos."; return;
+  }
+  empty.style.display = "none";
+  list.innerHTML = fotos.map((f, i) => `
+    <div class="admin-list-row">
+      <div class="admin-list-info">
+        <div class="admin-list-name">Foto ${i+1}</div>
+        <div class="admin-list-meta">${f.creado_en ? new Date(f.creado_en).toLocaleDateString("es-AR") : ""}</div>
+      </div>
+      <button class="btn-delete" onclick="deleteFoto('${f.id}','${modeloId}')">Eliminar</button>
+    </div>`).join("");
+}
+
+async function deleteFoto(fotoId, modeloId) {
+  if (!confirm("¿Eliminar esta foto de la galería?")) return;
+  const { error } = await sb.from("fotos").delete().eq("id", fotoId);
+  if (error) { showToast("Error al eliminar: "+error.message); return; }
+  allFotos = allFotos.filter(f => String(f.id) !== String(fotoId));
+  renderAdminFotosList(modeloId);
+  showToast("Foto eliminada");
+}
+
+function renderAdminModelosList() {
+  const list  = document.getElementById("admin-modelos-list");
+  const empty = document.getElementById("admin-modelos-empty");
+  if (!list) return;
+  if (!allModels.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  list.innerHTML = allModels.map(m => `
+    <div class="admin-list-row">
+      <div class="admin-list-info">
+        <div class="admin-list-name">${m.nombre}</div>
+        <div class="admin-list-meta">${m.codigo} · ${m.likes_mes||0} votos</div>
+      </div>
+      <button class="btn-delete" onclick="deleteModel('${m.id}','${m.nombre.replace(/'/g,"\\'")}')">Eliminar</button>
+    </div>`).join("");
+}
+
+async function deleteModel(id, nombre) {
+  if (!confirm(`¿Eliminar el perfil de "${nombre}"? Esto también borra todas sus fotos. No se puede deshacer.`)) return;
+  const { error: fErr } = await sb.from("fotos").delete().eq("modelo_id", id);
+  if (fErr) { showToast("Error al borrar sus fotos: "+fErr.message); return; }
+  const { error } = await sb.from("modelos").delete().eq("id", id);
+  if (error) { showToast("Error al eliminar: "+error.message); return; }
+  allModels = allModels.filter(m => String(m.id) !== String(id));
+  allFotos  = allFotos.filter(f => String(f.modelo_id) !== String(id));
+  showToast(`"${nombre}" eliminada`);
+  renderAdminModelosList();
+  populateModelSelect();
+  renderAdminFotosList(document.getElementById("f-modelo").value);
+}
+
+// ─── HELPERS ───────────────────────────────────────────────
+function setSt(el, msg, type) {
+  el.textContent = msg;
+  el.className = "ap-status" + (type ? " "+type : "");
+}
+let tt;
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2600);
+}
+</script>
+</body>
+</html>
