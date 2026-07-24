@@ -152,9 +152,9 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           <div class="ff"><label>Código único</label><input type="text" id="m-code" placeholder="#KM01"></div>
           <div class="ff"><label>Descripción</label><textarea id="m-desc" rows="3" placeholder="Breve texto editorial sobre la modelo."></textarea></div>
           <div class="ff">
-            <label>Embed de Telegram — Foto de perfil</label>
-            <textarea id="m-embed" rows="5" placeholder='&lt;script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="TuCanal/123" data-width="100%"&gt;&lt;/script&gt;'></textarea>
-            <div class="hint">Abrí el post en Telegram Web → Compartir → Embed → pegá el código completo.</div>
+            <label>Embed de imagen — Foto de perfil</label>
+            <textarea id="m-embed" rows="5" placeholder='Pegá cualquier embed de imagen: &lt;img src="https://…"&gt;, &lt;script&gt; de Telegram, iframe, etc.'></textarea>
+            <div class="hint">Podés pegar cualquier embed: una etiqueta &lt;img&gt; con URL directa, un embed de Telegram, un iframe de ImgBB, Cloudinary, etc.</div>
           </div>
           <div>
             <button class="btn-submit" id="btn-pub-m" onclick="publishModel()">Crear Perfil</button>
@@ -171,9 +171,9 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
             <select id="f-modelo" onchange="renderAdminFotosList(this.value)"><option value="">Seleccioná una modelo…</option></select>
           </div>
           <div class="ff">
-            <label>Embed de Telegram — Nueva foto</label>
-            <textarea id="f-embed" rows="5" placeholder='&lt;script async src="https://telegram.org/js/telegram-widget.js?22" data-telegram-post="TuCanal/456" data-width="100%"&gt;&lt;/script&gt;'></textarea>
-            <div class="hint">Esta foto se suma a la galería del perfil seleccionado.</div>
+            <label>Embed de imagen — Nueva foto</label>
+            <textarea id="f-embed" rows="5" placeholder='Pegá cualquier embed de imagen: &lt;img src="https://…"&gt;, &lt;script&gt; de Telegram, iframe, etc.'></textarea>
+            <div class="hint">Podés pegar cualquier embed: una etiqueta &lt;img&gt; con URL directa, un embed de Telegram, un iframe de ImgBB, Cloudinary, etc. Esta foto se suma a la galería del perfil seleccionado.</div>
           </div>
           <div>
             <button class="btn-submit" id="btn-pub-f" onclick="uploadFoto()">Subir Foto</button>
