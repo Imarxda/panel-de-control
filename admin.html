@@ -210,6 +210,20 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           <div class="ap-status" id="status-p"></div>
         </div>
       </div>
+
+      <div class="ap-sec-title" style="margin-top:36px">Fondo del Header (logo)</div>
+      <div class="ap-sec-sub">Imagen que aparece detrás del logo, arriba de todo el sitio. Cambiala cuando quieras sin tocar el logo.</div>
+      <div class="form-grid">
+        <div class="ff">
+          <label>URL de la imagen de fondo del header</label>
+          <input type="url" id="p-header-bg" placeholder="https://…/fondo-header.jpg">
+          <div class="hint">Subí la imagen a ImgBB, Cloudinary u otro hosting gratuito y pegá aquí el link directo. Dejalo vacío para que el header quede sin imagen de fondo.</div>
+        </div>
+        <div>
+          <button class="btn-submit" id="btn-pub-hb" onclick="saveHeaderBg()">Guardar Fondo del Header</button>
+          <div class="ap-status" id="status-hb"></div>
+        </div>
+      </div>
     </div>
 
     <!-- ── TAB EVENTOS ──────────────────────────────────────── -->
@@ -257,7 +271,7 @@ let sb         = null;
 let allModels  = [];
 let allFotos   = [];
 let allEvents  = [];
-let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
+let heroPortada = { imagen_url:"", titular:"", subtitulo:"", header_bg_url:"" };
 let toastTimer;
 
 // ════════════════════════════════════════════════════════════
@@ -362,6 +376,8 @@ function fillPortadaForm() {
   imgEl.value = heroPortada.imagen_url || "";
   document.getElementById("p-titular").value   = heroPortada.titular   || "";
   document.getElementById("p-subtitulo").value = heroPortada.subtitulo || "";
+  const hbEl = document.getElementById("p-header-bg");
+  if (hbEl) hbEl.value = heroPortada.header_bg_url || "";
 }
 
 async function savePortada() {
@@ -377,6 +393,20 @@ async function savePortada() {
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   heroPortada = data[0];
   setSt(st,"✓ Portada actualizada.","ok");
+  btn.disabled = false;
+}
+
+async function saveHeaderBg() {
+  const st  = document.getElementById("status-hb");
+  const btn = document.getElementById("btn-pub-hb");
+  const header_bg_url = document.getElementById("p-header-bg").value.trim();
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("portada").upsert([{
+    id: PORTADA_ID, header_bg_url
+  }]).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  heroPortada = data[0];
+  setSt(st,"✓ Fondo del header actualizado.","ok");
   btn.disabled = false;
 }
 
