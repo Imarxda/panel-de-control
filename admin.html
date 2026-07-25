@@ -84,6 +84,11 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 .btn-delete:hover{background:#c0392b;color:var(--white)}
 .admin-sub-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);margin-top:40px;margin-bottom:6px}
 
+/* Insignias */
+.insignia-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--gray-mid);padding:7px 10px;font-size:10px;letter-spacing:.03em;background:var(--gray-light)}
+.insignia-chip button{border:none;background:none;color:#c0392b;cursor:pointer;font-size:13px;line-height:1;padding:0}
+.insignia-chip button:hover{color:#8e2b20}
+
 /* Toast */
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--black);color:var(--white);font-size:10px;letter-spacing:.2em;text-transform:uppercase;padding:14px 28px;opacity:0;transition:all .4s;pointer-events:none;z-index:9999;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -184,6 +189,12 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
               <div class="ff">
                 <label>Link de Instagram (opcional)</label>
                 <input type="url" id="em-instagram" placeholder="https://instagram.com/usuario">
+              </div>
+              <div class="ff">
+                <label>Insignias del podio</label>
+                <div id="em-insignias-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+                <div id="em-insignias-empty" class="hint" style="display:none">Este perfil no tiene insignias.</div>
+                <button type="button" class="btn-delete" style="margin-top:12px" onclick="quitarTodasInsignias()">Quitar todas las insignias</button>
               </div>
               <div>
                 <button class="btn-submit" id="btn-edit-m" onclick="updateModel()">Guardar Cambios</button>
@@ -294,13 +305,13 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <!-- ── TAB SALÓN DE LA FAMA ─────────────────────────────────── -->
     <div class="ap-pane" id="tab-fama">
       <div class="ap-sec-title">Salón de la Fama</div>
-      <div class="ap-sec-sub">Acá queda el registro histórico de todas las que alguna vez llegaron al Top 3, sin importar el ciclo. Se cargan solas cada vez que cerrás un ciclo. Desde acá podés descargar, cuando quieras, la placa JPG especial de cada ganadora (distinta a la que se descargan ellas desde su perfil).</div>
+      <div class="ap-sec-sub">Acá queda el registro histórico de todos los perfiles que alguna vez llegaron al Top 3, sin importar el ciclo. Se carga solo cada vez que cerrás un ciclo. Desde acá podés descargar, cuando quieras, la placa JPG especial de podio (distinta a la que descarga cada modelo desde su propio perfil).</div>
       <div id="fama-recientes" style="display:none;margin-bottom:28px;padding:20px;border:1px solid var(--gold);background:#fffdf5">
         <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Recién cerrado — descargá las placas ahora</div>
         <div id="fama-recientes-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
       <div class="admin-list" id="admin-fama-list"></div>
-      <div id="admin-fama-empty" class="ap-status" style="display:none">Todavía no hay ganadoras registradas. Se cargan automáticamente al cerrar un ciclo desde la pestaña Ranking.</div>
+      <div id="admin-fama-empty" class="ap-status" style="display:none">Todavía no hay nadie registrado. Se carga automáticamente al cerrar un ciclo desde la pestaña Ranking.</div>
     </div>
 
     <!-- ── TAB TESTIMONIOS ────────────────────────────────────── -->
@@ -337,6 +348,8 @@ let sb = null;
 let allModels = [];
 let allFotos = [];
 let allEvents = [];
+let currentEditModelId = null;
+let currentEditInsignias = [];
 let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
 let toastTimer;
 
@@ -424,16 +437,55 @@ function populateEditModelSelect() {
 function loadModelForEdit(id) {
   const fields = document.getElementById("editar-fields");
   const st = document.getElementById("status-em");
-  if (!id) { fields.style.display = "none"; return; }
+  if (!id) { fields.style.display = "none"; currentEditModelId = null; currentEditInsignias = []; return; }
   const m = allModels.find(x => String(x.id) === String(id));
-  if (!m) { fields.style.display = "none"; return; }
+  if (!m) { fields.style.display = "none"; currentEditModelId = null; currentEditInsignias = []; return; }
   document.getElementById("em-name").value = m.nombre || "";
   document.getElementById("em-code").value = m.codigo || "";
   document.getElementById("em-desc").value = m.descripcion || "";
   document.getElementById("em-embed").value = m.foto_perfil_embed || "";
   document.getElementById("em-instagram").value = m.instagram_url || "";
+  currentEditModelId = id;
+  currentEditInsignias = Array.isArray(m.insignias) ? [...m.insignias] : [];
+  renderEmInsignias();
   setSt(st, "", "");
   fields.style.display = "block";
+}
+
+// ── INSIGNIAS DEL PODIO (editar/quitar) ─────────────────────
+function renderEmInsignias() {
+  const list  = document.getElementById("em-insignias-list");
+  const empty = document.getElementById("em-insignias-empty");
+  if (!list) return;
+  if (!currentEditInsignias.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  list.innerHTML = currentEditInsignias.map((b, i) => `
+    <span class="insignia-chip">🏆 ${b} <button type="button" onclick="quitarInsignia(${i})" title="Quitar insignia">✕</button></span>
+  `).join("");
+}
+
+async function quitarInsignia(idx) {
+  if (!currentEditModelId) return;
+  const nuevas = currentEditInsignias.filter((_, i) => i !== idx);
+  await guardarInsignias(nuevas);
+}
+
+async function quitarTodasInsignias() {
+  if (!currentEditModelId) { showToast("Seleccioná primero un modelo para editar."); return; }
+  if (!currentEditInsignias.length) { showToast("Este perfil ya no tiene insignias."); return; }
+  if (!confirm("¿Quitar todas las insignias de este perfil? No se puede deshacer.")) return;
+  await guardarInsignias([]);
+}
+
+async function guardarInsignias(nuevas) {
+  const st = document.getElementById("status-em");
+  const { data, error } = await sb.from("modelos").update({ insignias: nuevas }).eq("id", currentEditModelId).select();
+  if (error) { setSt(st, "Error al actualizar insignias: " + error.message, "error"); return; }
+  currentEditInsignias = nuevas;
+  const idx = allModels.findIndex(x => String(x.id) === String(currentEditModelId));
+  if (idx > -1 && data && data[0]) allModels[idx] = data[0];
+  renderEmInsignias();
+  showToast("Insignias actualizadas");
 }
 
 async function updateModel() {
@@ -937,16 +989,16 @@ function wrapCenteredText(ctx, text, cx, y, maxWidth, lineHeight) {
 
 // Paletas por puesto: 1=oro, 2=plata, 3=bronce
 const PUESTO_STYLE = {
-  1: { base: "#D4AF37", light: "#F3DA8C", label: "TOP 1 DEL MES", tag: "GANADORA DEL MES" },
-  2: { base: "#B9B9B9", light: "#E7E7E7", label: "TOP 2 DEL MES", tag: "SALÓN DE LA FAMA" },
-  3: { base: "#CD7F32", light: "#E7B27F", label: "TOP 3 DEL MES", tag: "SALÓN DE LA FAMA" }
+  1: { base: "#D4AF37", light: "#F3DA8C", label: "TOP 1 DEL MES" },
+  2: { base: "#B9B9B9", light: "#E7E7E7", label: "TOP 2 DEL MES" },
+  3: { base: "#CD7F32", light: "#E7B27F", label: "TOP 3 DEL MES" }
 };
 
 async function descargarJPGGanadora(famaId) {
   const f = allFama.find(x => String(x.id) === String(famaId));
   if (!f) { showToast("No se encontró el registro"); return; }
   const photoUrl = getEmbedShareUrlAdmin(f.foto_perfil_embed);
-  if (!photoUrl) { showToast("Esta ganadora no tiene foto de perfil cargada"); return; }
+  if (!photoUrl) { showToast("Este perfil no tiene foto de perfil cargada"); return; }
 
   showToast("Generando placa…");
   try {
