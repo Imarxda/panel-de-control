@@ -130,6 +130,8 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <button class="ap-tab active" onclick="switchTab('modelos',this)">Modelos</button>
     <button class="ap-tab" onclick="switchTab('portada',this)">Editar Portada</button>
     <button class="ap-tab" onclick="switchTab('eventos',this)">Carrusel / Eventos</button>
+    <button class="ap-tab" onclick="switchTab('ranking',this)">Ranking</button>
+    <button class="ap-tab" onclick="switchTab('testimonios',this)">Testimonios</button>
   </div>
 
   <div class="ap-content">
@@ -141,6 +143,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 
       <div class="sub-tabs">
         <button class="sub-tab active" onclick="switchSubTab('crear',this)">Crear Perfil de Modelo</button>
+        <button class="sub-tab" onclick="switchSubTab('editar',this)">Editar Perfil</button>
         <button class="sub-tab" onclick="switchSubTab('foto',this)">Subir Foto a Modelo existente</button>
         <button class="sub-tab" onclick="switchSubTab('gestionar',this)">Gestionar / Eliminar</button>
       </div>
@@ -148,17 +151,53 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <!-- Crear perfil -->
       <div class="sub-pane active" id="sub-crear">
         <div class="form-grid">
-          <div class="ff"><label>Nombre</label><input type="text" id="m-name" placeholder="Valentina López"></div>
+          <div class="ff"><label>Nombre</label><input type="text" id="m-name" placeholder="Nombre del modelo"></div>
           <div class="ff"><label>Código único</label><input type="text" id="m-code" placeholder="#KM01"></div>
-          <div class="ff"><label>Descripción</label><textarea id="m-desc" rows="3" placeholder="Breve texto editorial sobre la modelo."></textarea></div>
+          <div class="ff"><label>Descripción</label><textarea id="m-desc" rows="3" placeholder="Breve texto editorial sobre el modelo."></textarea></div>
           <div class="ff">
             <label>Embed de imagen — Foto de perfil</label>
             <textarea id="m-embed" rows="5" placeholder='Pegá cualquier embed de imagen: &lt;img src="https://…"&gt;, &lt;script&gt; de Telegram, iframe, etc.'></textarea>
             <div class="hint">Podés pegar cualquier embed: una etiqueta &lt;img&gt; con URL directa, un embed de Telegram, un iframe de ImgBB, Cloudinary, etc.</div>
           </div>
+          <div class="ff">
+            <label>Link de Instagram (opcional)</label>
+            <input type="url" id="m-instagram" placeholder="https://instagram.com/usuario">
+            <div class="hint">Si lo completás, en el perfil público va a aparecer un botón "Instagram" que lleva a este link.</div>
+          </div>
           <div>
             <button class="btn-submit" id="btn-pub-m" onclick="publishModel()">Crear Perfil</button>
             <div class="ap-status" id="status-m"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editar perfil -->
+      <div class="sub-pane" id="sub-editar">
+        <div class="ap-sec-sub" style="margin-bottom:8px">Elegí un modelo para editar sus datos, su foto de perfil, su descripción o su link de Instagram.</div>
+        <div class="form-grid">
+          <div class="ff">
+            <label>Modelo</label>
+            <select id="e-modelo-select" onchange="loadModelForEdit(this.value)"><option value="">Seleccioná un modelo…</option></select>
+          </div>
+          <div id="editar-fields" style="display:none">
+            <div class="form-grid">
+              <div class="ff"><label>Nombre</label><input type="text" id="em-name"></div>
+              <div class="ff"><label>Código único</label><input type="text" id="em-code"></div>
+              <div class="ff"><label>Descripción</label><textarea id="em-desc" rows="3"></textarea></div>
+              <div class="ff">
+                <label>Embed de imagen — Foto de perfil</label>
+                <textarea id="em-embed" rows="5"></textarea>
+                <div class="hint">Reemplazá el contenido para cambiar la foto de perfil.</div>
+              </div>
+              <div class="ff">
+                <label>Link de Instagram (opcional)</label>
+                <input type="url" id="em-instagram" placeholder="https://instagram.com/usuario">
+              </div>
+              <div>
+                <button class="btn-submit" id="btn-edit-m" onclick="updateModel()">Guardar Cambios</button>
+                <div class="ap-status" id="status-em"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -168,7 +207,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
         <div class="form-grid">
           <div class="ff">
             <label>Modelo</label>
-            <select id="f-modelo" onchange="renderAdminFotosList(this.value)"><option value="">Seleccioná una modelo…</option></select>
+            <select id="f-modelo" onchange="renderAdminFotosList(this.value)"><option value="">Seleccioná un modelo…</option></select>
           </div>
           <div class="ff">
             <label>Embed de imagen — Nueva foto</label>
@@ -180,16 +219,16 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
             <div class="ap-status" id="status-f"></div>
           </div>
         </div>
-        <div class="admin-sub-label">Fotos de esta modelo</div>
+        <div class="admin-sub-label">Fotos de este modelo</div>
         <div class="admin-list" id="admin-fotos-list"></div>
-        <div id="admin-fotos-empty" class="ap-status">Seleccioná una modelo para ver su galería.</div>
+        <div id="admin-fotos-empty" class="ap-status">Seleccioná un modelo para ver su galería.</div>
       </div>
 
       <!-- Gestionar / Eliminar -->
       <div class="sub-pane" id="sub-gestionar">
         <div class="ap-sec-sub" style="margin-bottom:8px">Eliminar un perfil borra también todas las fotos de su galería. Esta acción no se puede deshacer.</div>
         <div class="admin-list" id="admin-modelos-list"></div>
-        <div id="admin-modelos-empty" class="ap-status" style="display:none">Todavía no hay modelos creadas.</div>
+        <div id="admin-modelos-empty" class="ap-status" style="display:none">Todavía no hay modelos creados.</div>
       </div>
     </div>
 
@@ -208,20 +247,6 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
         <div>
           <button class="btn-submit" id="btn-pub-p" onclick="savePortada()">Guardar Portada</button>
           <div class="ap-status" id="status-p"></div>
-        </div>
-      </div>
-
-      <div class="ap-sec-title" style="margin-top:36px">Fondo del Header (logo)</div>
-      <div class="ap-sec-sub">Imagen que aparece detrás del logo, arriba de todo el sitio. Cambiala cuando quieras sin tocar el logo.</div>
-      <div class="form-grid">
-        <div class="ff">
-          <label>URL de la imagen de fondo del header</label>
-          <input type="url" id="p-header-bg" placeholder="https://…/fondo-header.jpg">
-          <div class="hint">Subí la imagen a ImgBB, Cloudinary u otro hosting gratuito y pegá aquí el link directo. Dejalo vacío para que el header quede sin imagen de fondo.</div>
-        </div>
-        <div>
-          <button class="btn-submit" id="btn-pub-hb" onclick="saveHeaderBg()">Guardar Fondo del Header</button>
-          <div class="ap-status" id="status-hb"></div>
         </div>
       </div>
     </div>
@@ -252,6 +277,53 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div id="admin-eventos-empty" class="ap-status" style="display:none">Todavía no hay eventos cargados.</div>
     </div>
 
+
+    <!-- ── TAB RANKING ────────────────────────────────────────── -->
+    <div class="ap-pane" id="tab-ranking">
+      <div class="ap-sec-title">Control del Ranking</div>
+      <div class="ap-sec-sub">Ciclo activo del ranking mensual. Cuando cerrás el ciclo, se guardan las insignias del top 3 y se resetean los votos. Creá el siguiente ciclo antes de cerrarlo para que el banner del sitio se actualice solo.</div>
+
+      <div class="form-grid">
+        <div class="ff"><label>Nombre del ciclo</label><input type="text" id="rk-nombre" placeholder="Agosto 2025"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="ff"><label>Fecha de inicio</label><input type="date" id="rk-inicio"></div>
+          <div class="ff"><label>Fecha de cierre</label><input type="date" id="rk-cierre"></div>
+        </div>
+        <div>
+          <button class="btn-submit" id="btn-pub-rk" onclick="crearCiclo()">Crear Nuevo Ciclo</button>
+          <div class="ap-status" id="status-rk"></div>
+        </div>
+      </div>
+
+      <div class="admin-sub-label" style="margin-top:32px">Ciclo activo ahora</div>
+      <div id="ciclo-activo-info" class="ap-status">Cargando…</div>
+
+      <div style="margin-top:24px;padding:20px;border:1px solid #c0392b;background:#fff5f5">
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#c0392b;margin-bottom:8px">⚠ Zona de peligro</div>
+        <div style="font-size:11px;color:#555;margin-bottom:16px;line-height:1.6">Cerrar el ciclo guarda las insignias del top 3 y resetea todos los votos a 0. Esta acción no se puede deshacer.</div>
+        <button class="btn-submit" style="background:#c0392b" onclick="cerrarCicloAdmin()">Cerrar ciclo y resetear votos</button>
+        <div class="ap-status" id="status-rk-close"></div>
+      </div>
+    </div>
+
+    <!-- ── TAB TESTIMONIOS ────────────────────────────────────── -->
+    <div class="ap-pane" id="tab-testimonios">
+      <div class="ap-sec-title">Testimonios de modelos</div>
+      <div class="ap-sec-sub">Frases que aparecen en la home para convencer a nuevas modelos de sumarse. Mantené 2-3 activos, cambiálos seguido.</div>
+      <div class="form-grid">
+        <div class="ff"><label>Nombre del modelo</label><input type="text" id="t-nombre" placeholder="Valentina R."></div>
+        <div class="ff"><label>Testimonio</label><textarea id="t-texto" rows="3" placeholder="Desde que estoy en imar source…"></textarea></div>
+        <div class="ff"><label>Orden (número menor aparece primero)</label><input type="number" id="t-orden" value="1" min="1"></div>
+        <div>
+          <button class="btn-submit" id="btn-pub-t" onclick="publishTestimonio()">Agregar Testimonio</button>
+          <div class="ap-status" id="status-t"></div>
+        </div>
+      </div>
+      <div class="admin-sub-label">Testimonios activos</div>
+      <div class="admin-list" id="admin-testimonios-list"></div>
+      <div id="admin-testimonios-empty" class="ap-status" style="display:none">Todavía no hay testimonios.</div>
+    </div>
+
   </div><!-- /ap-content -->
 </div><!-- /admin-panel -->
 
@@ -271,7 +343,7 @@ let sb         = null;
 let allModels  = [];
 let allFotos   = [];
 let allEvents  = [];
-let heroPortada = { imagen_url:"", titular:"", subtitulo:"", header_bg_url:"" };
+let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
 let toastTimer;
 
 // ════════════════════════════════════════════════════════════
@@ -300,6 +372,7 @@ async function doLogin() {
   document.getElementById("ap-user-email").textContent = data.user.email;
   await loadData();
   populateModelSelect();
+  populateEditModelSelect();
   fillPortadaForm();
   renderAdminModelosList();
   renderAdminEventosList();
@@ -321,6 +394,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("ap-user-email").textContent = data.session.user.email;
     await loadData();
     populateModelSelect();
+    populateEditModelSelect();
     fillPortadaForm();
     renderAdminModelosList();
     renderAdminEventosList();
@@ -357,6 +431,8 @@ function switchTab(name, btn) {
   if (name === "modelos") { populateModelSelect(); renderAdminModelosList(); }
   if (name === "portada") fillPortadaForm();
   if (name === "eventos") renderAdminEventosList();
+  if (name === "ranking") loadCicloInfo();
+  if (name === "testimonios") renderAdminTestimoniosList();
 }
 function switchSubTab(name, btn) {
   document.querySelectorAll(".sub-tab").forEach(b=>b.classList.remove("active"));
@@ -365,6 +441,59 @@ function switchSubTab(name, btn) {
   document.getElementById("sub-"+name).classList.add("active");
   if (name === "foto") { populateModelSelect(); renderAdminFotosList(document.getElementById("f-modelo").value); }
   if (name === "gestionar") renderAdminModelosList();
+  if (name === "editar") populateEditModelSelect();
+}
+
+// ════════════════════════════════════════════════════════════
+//  EDITAR PERFIL
+// ════════════════════════════════════════════════════════════
+function populateEditModelSelect() {
+  const sel = document.getElementById("e-modelo-select");
+  if (!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Seleccioná un modelo…</option>' +
+    allModels.map(m => `<option value="${m.id}">${m.nombre} — ${m.codigo}</option>`).join("");
+  if (current) sel.value = current;
+}
+
+function loadModelForEdit(id) {
+  const fields = document.getElementById("editar-fields");
+  const st = document.getElementById("status-em");
+  if (!id) { fields.style.display = "none"; return; }
+  const m = allModels.find(x => String(x.id) === String(id));
+  if (!m) { fields.style.display = "none"; return; }
+  document.getElementById("em-name").value = m.nombre || "";
+  document.getElementById("em-code").value = m.codigo || "";
+  document.getElementById("em-desc").value = m.descripcion || "";
+  document.getElementById("em-embed").value = m.foto_perfil_embed || "";
+  document.getElementById("em-instagram").value = m.instagram_url || "";
+  setSt(st, "", "");
+  fields.style.display = "block";
+}
+
+async function updateModel() {
+  const st = document.getElementById("status-em");
+  const btn = document.getElementById("btn-edit-m");
+  const id = document.getElementById("e-modelo-select").value;
+  if (!id) { setSt(st,"Seleccioná un modelo.","error"); return; }
+  const nombre = document.getElementById("em-name").value.trim();
+  const codigo = document.getElementById("em-code").value.trim();
+  const descripcion = document.getElementById("em-desc").value.trim();
+  const foto_perfil_embed = document.getElementById("em-embed").value.trim();
+  const instagram_url = document.getElementById("em-instagram").value.trim();
+  if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
+  const { data, error } = await sb.from("modelos").update({
+    nombre, codigo, descripcion, foto_perfil_embed, instagram_url
+  }).eq("id", id).select();
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  const idx = allModels.findIndex(x => String(x.id) === String(id));
+  if (idx > -1) allModels[idx] = data[0];
+  setSt(st,"✓ Perfil actualizado.","ok");
+  btn.disabled = false;
+  populateModelSelect();
+  populateEditModelSelect();
+  renderAdminModelosList();
 }
 
 // ════════════════════════════════════════════════════════════
@@ -376,8 +505,6 @@ function fillPortadaForm() {
   imgEl.value = heroPortada.imagen_url || "";
   document.getElementById("p-titular").value   = heroPortada.titular   || "";
   document.getElementById("p-subtitulo").value = heroPortada.subtitulo || "";
-  const hbEl = document.getElementById("p-header-bg");
-  if (hbEl) hbEl.value = heroPortada.header_bg_url || "";
 }
 
 async function savePortada() {
@@ -393,20 +520,6 @@ async function savePortada() {
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   heroPortada = data[0];
   setSt(st,"✓ Portada actualizada.","ok");
-  btn.disabled = false;
-}
-
-async function saveHeaderBg() {
-  const st  = document.getElementById("status-hb");
-  const btn = document.getElementById("btn-pub-hb");
-  const header_bg_url = document.getElementById("p-header-bg").value.trim();
-  btn.disabled = true; setSt(st,"Guardando…","");
-  const { data, error } = await sb.from("portada").upsert([{
-    id: PORTADA_ID, header_bg_url
-  }]).select();
-  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
-  heroPortada = data[0];
-  setSt(st,"✓ Fondo del header actualizado.","ok");
   btn.disabled = false;
 }
 
@@ -451,7 +564,7 @@ function renderAdminEventosList() {
       <div class="admin-list-thumb">${thumb}</div>
       <div class="admin-list-info">
         <div class="admin-list-name">${ev.titulo}</div>
-        <div class="admin-list-meta">${d}</div>
+        <div class="admin-list-meta">${d} · ${ev.interesados||0} interesados</div>
       </div>
       <button class="btn-delete" onclick="deleteEvent('${ev.id}','${ev.titulo.replace(/'/g,"\\'")}')">Eliminar</button>
     </div>`;
@@ -477,10 +590,11 @@ async function publishModel() {
   const codigo      = document.getElementById("m-code").value.trim();
   const descripcion = document.getElementById("m-desc").value.trim();
   const embed       = document.getElementById("m-embed").value.trim();
+  const instagram_url = document.getElementById("m-instagram").value.trim();
   if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("modelos").insert([{
-    nombre, codigo, descripcion, foto_perfil_embed: embed, likes_mes: 0, creado_en: new Date().toISOString()
+    nombre, codigo, descripcion, foto_perfil_embed: embed, instagram_url, likes_mes: 0, creado_en: new Date().toISOString()
   }]).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   allModels.push(data[0]);
@@ -489,9 +603,11 @@ async function publishModel() {
   document.getElementById("m-code").value  = "";
   document.getElementById("m-desc").value  = "";
   document.getElementById("m-embed").value = "";
+  document.getElementById("m-instagram").value = "";
   setSt(st,`✓ Perfil de "${nombre}" creado correctamente.`,"ok");
   btn.disabled = false;
   populateModelSelect();
+  populateEditModelSelect();
   renderAdminModelosList();
 }
 
@@ -499,7 +615,7 @@ function populateModelSelect() {
   const sel = document.getElementById("f-modelo");
   if (!sel) return;
   const current = sel.value;
-  sel.innerHTML = '<option value="">Seleccioná una modelo…</option>' +
+  sel.innerHTML = '<option value="">Seleccioná un modelo…</option>' +
     allModels.map(m => `<option value="${m.id}">${m.nombre} — ${m.codigo}</option>`).join("");
   if (current) sel.value = current;
 }
@@ -509,7 +625,7 @@ async function uploadFoto() {
   const btn      = document.getElementById("btn-pub-f");
   const modeloId = document.getElementById("f-modelo").value;
   const embed    = document.getElementById("f-embed").value.trim();
-  if (!modeloId) { setSt(st,"Seleccioná una modelo.","error"); return; }
+  if (!modeloId) { setSt(st,"Seleccioná un modelo.","error"); return; }
   if (!embed)    { setSt(st,"Pegá el embed de la foto.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("fotos").insert([{
@@ -519,7 +635,7 @@ async function uploadFoto() {
   allFotos.push(data[0]);
   document.getElementById("f-embed").value = "";
   const m = allModels.find(x=>String(x.id)===String(modeloId));
-  setSt(st,`✓ Foto agregada a la galería de "${m?m.nombre:'la modelo'}".`,"ok");
+  setSt(st,`✓ Foto agregada a la galería de "${m?m.nombre:'el modelo'}".`,"ok");
   btn.disabled = false;
   renderAdminFotosList(modeloId);
 }
@@ -530,12 +646,12 @@ function renderAdminFotosList(modeloId) {
   if (!list) return;
   if (!modeloId) {
     list.innerHTML = ""; empty.style.display = "block";
-    empty.textContent = "Seleccioná una modelo para ver su galería."; return;
+    empty.textContent = "Seleccioná un modelo para ver su galería."; return;
   }
   const fotos = allFotos.filter(f => String(f.modelo_id) === String(modeloId));
   if (!fotos.length) {
     list.innerHTML = ""; empty.style.display = "block";
-    empty.textContent = "Esta modelo todavía no tiene fotos."; return;
+    empty.textContent = "Este modelo todavía no tiene fotos."; return;
   }
   empty.style.display = "none";
   list.innerHTML = fotos.map((f, i) => `
@@ -584,6 +700,8 @@ async function deleteModel(id, nombre) {
   showToast(`"${nombre}" eliminada`);
   renderAdminModelosList();
   populateModelSelect();
+  populateEditModelSelect();
+  document.getElementById("editar-fields").style.display = "none";
   renderAdminFotosList(document.getElementById("f-modelo").value);
 }
 
@@ -598,6 +716,105 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add("show");
   clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2600);
 }
+
+// ════════════════════════════════════════════════════════════
+//  RANKING — ciclos y reset
+// ════════════════════════════════════════════════════════════
+async function loadCicloInfo() {
+  const el = document.getElementById("ciclo-activo-info");
+  if (!el) return;
+  try {
+    const { data } = await sb.from("ciclos_ranking").select("*").eq("activo", true).maybeSingle();
+    if (data) {
+      el.innerHTML = `<strong>${data.nombre}</strong> — Del ${data.fecha_inicio} al ${data.fecha_cierre}`;
+      el.className = "ap-status ok";
+    } else {
+      el.textContent = "No hay ciclo activo. Creá uno arriba.";
+      el.className = "ap-status";
+    }
+  } catch(e) { el.textContent = "Error al cargar ciclo."; el.className = "ap-status error"; }
+}
+
+async function crearCiclo() {
+  const st = document.getElementById("status-rk");
+  const btn = document.getElementById("btn-pub-rk");
+  const nombre = document.getElementById("rk-nombre").value.trim();
+  const inicio = document.getElementById("rk-inicio").value;
+  const cierre = document.getElementById("rk-cierre").value;
+  if (!nombre || !inicio || !cierre) { setSt(st, "Completá todos los campos.", "error"); return; }
+  btn.disabled = true; setSt(st, "Guardando…", "");
+  // Desactivar el ciclo actual
+  await sb.from("ciclos_ranking").update({ activo: false }).eq("activo", true);
+  const { error } = await sb.from("ciclos_ranking").insert([{
+    nombre, fecha_inicio: inicio, fecha_cierre: cierre, activo: true
+  }]);
+  if (error) { setSt(st, "Error: " + error.message, "error"); btn.disabled = false; return; }
+  setSt(st, "✓ Ciclo "" + nombre + "" creado y activado.", "ok");
+  btn.disabled = false;
+  document.getElementById("rk-nombre").value = "";
+  loadCicloInfo();
+}
+
+async function cerrarCicloAdmin() {
+  const st = document.getElementById("status-rk-close");
+  if (!confirm("¿Cerrás el ciclo activo y reseteás todos los votos? Esta acción no se puede deshacer.")) return;
+  setSt(st, "Cerrando ciclo…", "");
+  try {
+    const { error } = await sb.rpc("cerrar_ciclo_y_resetear");
+    if (error) { setSt(st, "Error: " + error.message, "error"); return; }
+    setSt(st, "✓ Ciclo cerrado. Votos reseteados. Insignias del top 3 guardadas.", "ok");
+    await loadData();
+    renderAdminModelosList();
+    loadCicloInfo();
+  } catch(e) { setSt(st, "Error inesperado: " + e.message, "error"); }
+}
+
+// ════════════════════════════════════════════════════════════
+//  TESTIMONIOS
+// ════════════════════════════════════════════════════════════
+async function publishTestimonio() {
+  const st = document.getElementById("status-t");
+  const btn = document.getElementById("btn-pub-t");
+  const modelo_nombre = document.getElementById("t-nombre").value.trim();
+  const texto = document.getElementById("t-texto").value.trim();
+  const orden = parseInt(document.getElementById("t-orden").value) || 1;
+  if (!modelo_nombre || !texto) { setSt(st, "Nombre y testimonio son obligatorios.", "error"); return; }
+  btn.disabled = true; setSt(st, "Guardando…", "");
+  const { error } = await sb.from("testimonios").insert([{ modelo_nombre, texto, orden, activo: true }]);
+  if (error) { setSt(st, "Error: " + error.message, "error"); btn.disabled = false; return; }
+  setSt(st, "✓ Testimonio de "" + modelo_nombre + "" agregado.", "ok");
+  btn.disabled = false;
+  document.getElementById("t-nombre").value = "";
+  document.getElementById("t-texto").value = "";
+  renderAdminTestimoniosList();
+}
+
+async function renderAdminTestimoniosList() {
+  const list = document.getElementById("admin-testimonios-list");
+  const empty = document.getElementById("admin-testimonios-empty");
+  if (!list) return;
+  try {
+    const { data } = await sb.from("testimonios").select("*").order("orden");
+    if (!data || !data.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+    empty.style.display = "none";
+    list.innerHTML = data.map(t => `
+      <div class="admin-list-row">
+        <div class="admin-list-info">
+          <div class="admin-list-name">${t.modelo_nombre} ${t.activo ? '✓' : '(inactivo)'}</div>
+          <div class="admin-list-meta" style="white-space:normal;line-height:1.4">"${t.texto.slice(0, 80)}…"</div>
+        </div>
+        <button class="btn-delete" onclick="deleteTestimonio(${t.id})">Eliminar</button>
+      </div>`).join("");
+  } catch(e) { list.innerHTML = ""; }
+}
+
+async function deleteTestimonio(id) {
+  if (!confirm("¿Eliminar este testimonio?")) return;
+  await sb.from("testimonios").delete().eq("id", id);
+  showToast("Testimonio eliminado");
+  renderAdminTestimoniosList();
+}
+
 </script>
 </body>
 </html>
