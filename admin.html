@@ -67,7 +67,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 #ap-logout:hover{border-color:var(--black)}
 
 /* Sub-tabs */
-.sub-tabs{display:flex;gap:10px;margin-bottom:32px}
+.sub-tabs{display:flex;gap:10px;margin-bottom:32px;flex-wrap:wrap}
 .sub-tab{background:none;border:1px solid var(--gray-mid);font-family:var(--sans);font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px;cursor:pointer;transition:all var(--ease);color:var(--gray-text)}
 .sub-tab.active{background:var(--black);color:var(--white);border-color:var(--black)}
 .sub-pane{display:none}
@@ -102,7 +102,21 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <div class="al-title"><em>imar</em> source</div>
     <div class="al-sub" style="margin-top:8px">Panel de administración</div>
   </div>
-  
+  <div class="al-field">
+    <label>Contraseña</label>
+    <input type="password" id="login-pwd" onkeydown="if(event.key==='Enter')doLogin()">
+  </div>
+  <div id="login-error"></div>
+  <button class="btn-primary" onclick="doLogin()">Acceder</button>
+</div>
+
+<!-- ══ PANEL ADMIN ════════════════════════════════════════════ -->
+<div id="admin-panel">
+  <div class="ap-header">
+    <div>
+      <div class="ap-title">Panel Admin <span>imar source</span></div>
+      <div class="ap-user" id="ap-user-email"></div>
+    </div>
     <button id="ap-logout" onclick="doLogout()">Cerrar sesión</button>
   </div>
 
@@ -122,9 +136,9 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div class="ap-sec-sub">Cada modelo tiene un único perfil. Crealo una vez y después sumale fotos a su galería personal.</div>
 
       <div class="sub-tabs">
-        <button class="sub-tab active" onclick="switchSubTab('crear',this)">Crear Perfil de Modelo</button>
+        <button class="sub-tab active" onclick="switchSubTab('crear',this)">Crear Perfil</button>
         <button class="sub-tab" onclick="switchSubTab('editar',this)">Editar Perfil</button>
-        <button class="sub-tab" onclick="switchSubTab('foto',this)">Subir Foto a Modelo existente</button>
+        <button class="sub-tab" onclick="switchSubTab('foto',this)">Subir Foto</button>
         <button class="sub-tab" onclick="switchSubTab('gestionar',this)">Gestionar / Eliminar</button>
       </div>
 
@@ -142,7 +156,6 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           <div class="ff">
             <label>Link de Instagram (opcional)</label>
             <input type="url" id="m-instagram" placeholder="https://instagram.com/usuario">
-            <div class="hint">Si lo completás, en el perfil público va a aparecer un botón "Instagram" que lleva a este link.</div>
           </div>
           <div>
             <button class="btn-submit" id="btn-pub-m" onclick="publishModel()">Crear Perfil</button>
@@ -153,7 +166,6 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 
       <!-- Editar perfil -->
       <div class="sub-pane" id="sub-editar">
-        <div class="ap-sec-sub" style="margin-bottom:8px">Elegí un modelo para editar sus datos, su foto de perfil, su descripción o su link de Instagram.</div>
         <div class="form-grid">
           <div class="ff">
             <label>Modelo</label>
@@ -167,7 +179,6 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
               <div class="ff">
                 <label>Embed de imagen — Foto de perfil</label>
                 <textarea id="em-embed" rows="5"></textarea>
-                <div class="hint">Reemplazá el contenido para cambiar la foto de perfil.</div>
               </div>
               <div class="ff">
                 <label>Link de Instagram (opcional)</label>
@@ -191,8 +202,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           </div>
           <div class="ff">
             <label>Embed de imagen — Nueva foto</label>
-            <textarea id="f-embed" rows="5" placeholder='Pegá cualquier embed de imagen: &lt;img src="https://…"&gt;, &lt;script&gt; de Telegram, iframe, etc.'></textarea>
-            <div class="hint">Podés pegar cualquier embed: una etiqueta &lt;img&gt; con URL directa, un embed de Telegram, un iframe de ImgBB, Cloudinary, etc. Esta foto se suma a la galería del perfil seleccionado.</div>
+            <textarea id="f-embed" rows="5" placeholder='Pegá cualquier embed de imagen: &lt;img src="https://…"&gt;, iframe, etc.'></textarea>
           </div>
           <div>
             <button class="btn-submit" id="btn-pub-f" onclick="uploadFoto()">Subir Foto</button>
@@ -215,12 +225,11 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <!-- ── TAB PORTADA ──────────────────────────────────────── -->
     <div class="ap-pane" id="tab-portada">
       <div class="ap-sec-title">Portada de la Temporada</div>
-      <div class="ap-sec-sub">La imagen y el titular que aparecen al inicio del sitio. Actualizalos cada mes o temporada.</div>
+      <div class="ap-sec-sub">La imagen y el titular que aparecen al inicio del sitio.</div>
       <div class="form-grid">
         <div class="ff">
           <label>URL de la imagen de fondo</label>
           <input type="url" id="p-imagen" placeholder="https://…/portada.jpg">
-          <div class="hint">Subí la foto a ImgBB, Cloudinary o Telegram y pegá el link directo. Se recomienda orientación retrato.</div>
         </div>
         <div class="ff"><label>Titular de la temporada</label><input type="text" id="p-titular" placeholder="Edición Primavera / Verano"></div>
         <div class="ff"><label>Subtítulo</label><input type="text" id="p-subtitulo" placeholder="Las tendencias que marcan la temporada."></div>
@@ -236,12 +245,11 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div class="ap-sec-title">Nuevo Evento</div>
       <div class="ap-sec-sub">Completá los datos para agregar el evento al carrusel y al ticker.</div>
       <div class="form-grid">
-        <div class="ff"><label>Título del evento</label><input type="text" id="e-title" placeholder="Kanime 2025"></div>
+        <div class="ff"><label>Título del evento</label><input type="text" id="e-title" placeholder="Kanime 2026"></div>
         <div class="ff"><label>Fecha</label><input type="date" id="e-date"></div>
         <div class="ff">
           <label>URL del banner</label>
           <input type="url" id="e-banner" placeholder="https://…/banner.jpg">
-          <div class="hint">Subí la imagen a ImgBB, Cloudinary u otro hosting gratuito y pegá el enlace directo.</div>
         </div>
         <div class="ff">
           <label>Descripción del evento</label>
@@ -257,12 +265,10 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div id="admin-eventos-empty" class="ap-status" style="display:none">Todavía no hay eventos cargados.</div>
     </div>
 
-
     <!-- ── TAB RANKING ────────────────────────────────────────── -->
     <div class="ap-pane" id="tab-ranking">
       <div class="ap-sec-title">Control del Ranking</div>
-      <div class="ap-sec-sub">Ciclo activo del ranking mensual. Cuando cerrás el ciclo, se guardan las insignias del top 3 y se resetean los votos. Creá el siguiente ciclo antes de cerrarlo para que el banner del sitio se actualice solo.</div>
-
+      <div class="ap-sec-sub">Ciclo activo del ranking mensual. Cuando cerrás el ciclo se guardan las insignias del top 3 y se resetean los votos.</div>
       <div class="form-grid">
         <div class="ff"><label>Nombre del ciclo</label><input type="text" id="rk-nombre" placeholder="Agosto 2026"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -274,13 +280,11 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           <div class="ap-status" id="status-rk"></div>
         </div>
       </div>
-
       <div class="admin-sub-label" style="margin-top:32px">Ciclo activo ahora</div>
       <div id="ciclo-activo-info" class="ap-status">Cargando…</div>
-
       <div style="margin-top:24px;padding:20px;border:1px solid #c0392b;background:#fff5f5">
         <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#c0392b;margin-bottom:8px">⚠ Zona de peligro</div>
-        <div style="font-size:11px;color:#555;margin-bottom:16px;line-height:1.6">Cerrar el ciclo guarda las insignias del top 3 y resetea todos los votos a 0. Esta acción no se puede deshacer.</div>
+        <div style="font-size:11px;color:#555;margin-bottom:16px;line-height:1.6">Cerrar el ciclo guarda las insignias del top 3 y resetea todos los votos a 0. No se puede deshacer.</div>
         <button class="btn-submit" style="background:#c0392b" onclick="cerrarCicloAdmin()">Cerrar ciclo y resetear votos</button>
         <div class="ap-status" id="status-rk-close"></div>
       </div>
@@ -289,10 +293,10 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <!-- ── TAB TESTIMONIOS ────────────────────────────────────── -->
     <div class="ap-pane" id="tab-testimonios">
       <div class="ap-sec-title">Testimonios de modelos</div>
-      <div class="ap-sec-sub">Frases que aparecen en la home para convencer a nuevas modelos de sumarse. Mantené 2-3 activos, cambiálos seguido.</div>
+      <div class="ap-sec-sub">Frases de modelos que aparecen en la home.</div>
       <div class="form-grid">
         <div class="ff"><label>Nombre del modelo</label><input type="text" id="t-nombre" placeholder="Valentina R."></div>
-        <div class="ff"><label>Testimonio</label><textarea id="t-texto" rows="3" placeholder="Desde que estoy en imar source…"></textarea></div>
+        <div class="ff"><label>Testimonio</label><textarea id="t-texto" rows="3" placeholder="Escribí la frase…"></textarea></div>
         <div class="ff"><label>Orden (número menor aparece primero)</label><input type="number" id="t-orden" value="1" min="1"></div>
         <div>
           <button class="btn-submit" id="btn-pub-t" onclick="publishTestimonio()">Agregar Testimonio</button>
@@ -311,31 +315,27 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 <div id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════
-//  CONFIG — credenciales de Supabase (solo en admin.html)
-// ════════════════════════════════════════════════════════════
 const SUPABASE_URL = "https://lmxpbgvbxvmnlcntovdo.supabase.co";
 const SUPABASE_KEY = "sb_publishable_IRXmidh-ipHtdPMH4-O-iA_dQnnuZN6";
-const PORTADA_ID   = 1;
+const ADMIN_PASSWORD = "imarsource2025";
+const PORTADA_ID = 1;
 
-// ─── ESTADO ────────────────────────────────────────────────
-let sb         = null;
-let allModels  = [];
-let allFotos   = [];
-let allEvents  = [];
+let sb = null;
+let allModels = [];
+let allFotos = [];
+let allEvents = [];
 let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
 let toastTimer;
 
-// ════════════════════════════════════════════════════════════
-//  AUTH — Supabase Auth (email + password)
-// ════════════════════════════════════════════════════════════
 function initSB() {
   if (!sb) sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
 async function doLogin() {
   const pwd = document.getElementById("login-pwd").value;
-  if (pwd === "imarsource2025") {
+  const errEl = document.getElementById("login-error");
+  if (pwd === ADMIN_PASSWORD) {
+    initSB();
     document.getElementById("login-screen").classList.add("hidden");
     document.getElementById("admin-panel").classList.add("open");
     document.getElementById("ap-user-email").textContent = "admin";
@@ -346,13 +346,19 @@ async function doLogin() {
     renderAdminModelosList();
     renderAdminEventosList();
   } else {
-    document.getElementById("login-error").textContent = "Contraseña incorrecta.";
+    errEl.textContent = "Contraseña incorrecta.";
+    document.getElementById("login-pwd").value = "";
   }
+}
+
+function doLogout() {
+  location.reload();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  initSB();
 });
 
-// ════════════════════════════════════════════════════════════
-//  DATA
-// ════════════════════════════════════════════════════════════
 async function loadData() {
   try {
     const results = await Promise.allSettled([
@@ -362,16 +368,13 @@ async function loadData() {
       sb.from("portada").select("*").eq("id", PORTADA_ID).maybeSingle(),
     ]);
     const [mRes, eRes, fRes, pRes] = results;
-    if (mRes.status === "fulfilled" && mRes.value.data) allModels  = mRes.value.data;
-    if (eRes.status === "fulfilled" && eRes.value.data) allEvents  = eRes.value.data;
-    if (fRes.status === "fulfilled" && fRes.value.data) allFotos   = fRes.value.data;
+    if (mRes.status === "fulfilled" && mRes.value.data) allModels = mRes.value.data;
+    if (eRes.status === "fulfilled" && eRes.value.data) allEvents = eRes.value.data;
+    if (fRes.status === "fulfilled" && fRes.value.data) allFotos  = fRes.value.data;
     if (pRes.status === "fulfilled" && pRes.value.data) heroPortada = pRes.value.data;
   } catch(e) { console.warn("Error Supabase:", e); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  TABS / SUB-TABS
-// ════════════════════════════════════════════════════════════
 function switchTab(name, btn) {
   document.querySelectorAll(".ap-tab").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".ap-pane").forEach(p=>p.classList.remove("active"));
@@ -383,6 +386,7 @@ function switchTab(name, btn) {
   if (name === "ranking") loadCicloInfo();
   if (name === "testimonios") renderAdminTestimoniosList();
 }
+
 function switchSubTab(name, btn) {
   document.querySelectorAll(".sub-tab").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".sub-pane").forEach(p=>p.classList.remove("active"));
@@ -393,9 +397,6 @@ function switchSubTab(name, btn) {
   if (name === "editar") populateEditModelSelect();
 }
 
-// ════════════════════════════════════════════════════════════
-//  EDITAR PERFIL
-// ════════════════════════════════════════════════════════════
 function populateEditModelSelect() {
   const sel = document.getElementById("e-modelo-select");
   if (!sel) return;
@@ -445,9 +446,6 @@ async function updateModel() {
   renderAdminModelosList();
 }
 
-// ════════════════════════════════════════════════════════════
-//  PORTADA
-// ════════════════════════════════════════════════════════════
 function fillPortadaForm() {
   const imgEl = document.getElementById("p-imagen");
   if (!imgEl) return;
@@ -472,9 +470,6 @@ async function savePortada() {
   btn.disabled = false;
 }
 
-// ════════════════════════════════════════════════════════════
-//  EVENTOS
-// ════════════════════════════════════════════════════════════
 async function publishEvent() {
   const st  = document.getElementById("status-e");
   const btn = document.getElementById("btn-pub-e");
@@ -529,16 +524,13 @@ async function deleteEvent(id, titulo) {
   renderAdminEventosList();
 }
 
-// ════════════════════════════════════════════════════════════
-//  MODELOS
-// ════════════════════════════════════════════════════════════
 async function publishModel() {
   const st  = document.getElementById("status-m");
   const btn = document.getElementById("btn-pub-m");
-  const nombre      = document.getElementById("m-name").value.trim();
-  const codigo      = document.getElementById("m-code").value.trim();
-  const descripcion = document.getElementById("m-desc").value.trim();
-  const embed       = document.getElementById("m-embed").value.trim();
+  const nombre        = document.getElementById("m-name").value.trim();
+  const codigo        = document.getElementById("m-code").value.trim();
+  const descripcion   = document.getElementById("m-desc").value.trim();
+  const embed         = document.getElementById("m-embed").value.trim();
   const instagram_url = document.getElementById("m-instagram").value.trim();
   if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
@@ -548,10 +540,10 @@ async function publishModel() {
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   allModels.push(data[0]);
   allModels.sort((a,b)=>(b.likes_mes||0)-(a.likes_mes||0));
-  document.getElementById("m-name").value  = "";
-  document.getElementById("m-code").value  = "";
-  document.getElementById("m-desc").value  = "";
-  document.getElementById("m-embed").value = "";
+  document.getElementById("m-name").value      = "";
+  document.getElementById("m-code").value      = "";
+  document.getElementById("m-desc").value      = "";
+  document.getElementById("m-embed").value     = "";
   document.getElementById("m-instagram").value = "";
   setSt(st,`✓ Perfil de "${nombre}" creado correctamente.`,"ok");
   btn.disabled = false;
@@ -593,15 +585,9 @@ function renderAdminFotosList(modeloId) {
   const list  = document.getElementById("admin-fotos-list");
   const empty = document.getElementById("admin-fotos-empty");
   if (!list) return;
-  if (!modeloId) {
-    list.innerHTML = ""; empty.style.display = "block";
-    empty.textContent = "Seleccioná un modelo para ver su galería."; return;
-  }
+  if (!modeloId) { list.innerHTML = ""; empty.style.display = "block"; empty.textContent = "Seleccioná un modelo para ver su galería."; return; }
   const fotos = allFotos.filter(f => String(f.modelo_id) === String(modeloId));
-  if (!fotos.length) {
-    list.innerHTML = ""; empty.style.display = "block";
-    empty.textContent = "Este modelo todavía no tiene fotos."; return;
-  }
+  if (!fotos.length) { list.innerHTML = ""; empty.style.display = "block"; empty.textContent = "Este modelo todavía no tiene fotos."; return; }
   empty.style.display = "none";
   list.innerHTML = fotos.map((f, i) => `
     <div class="admin-list-row">
@@ -654,7 +640,6 @@ async function deleteModel(id, nombre) {
   renderAdminFotosList(document.getElementById("f-modelo").value);
 }
 
-// ─── HELPERS ───────────────────────────────────────────────
 function setSt(el, msg, type) {
   el.textContent = msg;
   el.className = "ap-status" + (type ? " "+type : "");
@@ -666,9 +651,7 @@ function showToast(msg) {
   clearTimeout(tt); tt = setTimeout(()=>t.classList.remove("show"), 2600);
 }
 
-// ════════════════════════════════════════════════════════════
-//  RANKING — ciclos y reset
-// ════════════════════════════════════════════════════════════
+// ── RANKING ─────────────────────────────────────────────────
 async function loadCicloInfo() {
   const el = document.getElementById("ciclo-activo-info");
   if (!el) return;
@@ -685,20 +668,19 @@ async function loadCicloInfo() {
 }
 
 async function crearCiclo() {
-  const st = document.getElementById("status-rk");
+  const st  = document.getElementById("status-rk");
   const btn = document.getElementById("btn-pub-rk");
   const nombre = document.getElementById("rk-nombre").value.trim();
   const inicio = document.getElementById("rk-inicio").value;
   const cierre = document.getElementById("rk-cierre").value;
-  if (!nombre || !inicio || !cierre) { setSt(st, "Completá todos los campos.", "error"); return; }
-  btn.disabled = true; setSt(st, "Guardando…", "");
-  // Desactivar el ciclo actual
+  if (!nombre || !inicio || !cierre) { setSt(st,"Completá todos los campos.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
   await sb.from("ciclos_ranking").update({ activo: false }).eq("activo", true);
   const { error } = await sb.from("ciclos_ranking").insert([{
     nombre, fecha_inicio: inicio, fecha_cierre: cierre, activo: true
   }]);
-  if (error) { setSt(st, "Error: " + error.message, "error"); btn.disabled = false; return; }
-  setSt(st, "✓ Ciclo "" + nombre + "" creado y activado.", "ok");
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  setSt(st,`✓ Ciclo "${nombre}" creado y activado.`,"ok");
   btn.disabled = false;
   document.getElementById("rk-nombre").value = "";
   loadCicloInfo();
@@ -706,40 +688,38 @@ async function crearCiclo() {
 
 async function cerrarCicloAdmin() {
   const st = document.getElementById("status-rk-close");
-  if (!confirm("¿Cerrás el ciclo activo y reseteás todos los votos? Esta acción no se puede deshacer.")) return;
-  setSt(st, "Cerrando ciclo…", "");
+  if (!confirm("¿Cerrás el ciclo activo y reseteás todos los votos? No se puede deshacer.")) return;
+  setSt(st,"Cerrando ciclo…","");
   try {
     const { error } = await sb.rpc("cerrar_ciclo_y_resetear");
-    if (error) { setSt(st, "Error: " + error.message, "error"); return; }
-    setSt(st, "✓ Ciclo cerrado. Votos reseteados. Insignias del top 3 guardadas.", "ok");
+    if (error) { setSt(st,"Error: "+error.message,"error"); return; }
+    setSt(st,"✓ Ciclo cerrado. Votos reseteados. Insignias del top 3 guardadas.","ok");
     await loadData();
     renderAdminModelosList();
     loadCicloInfo();
-  } catch(e) { setSt(st, "Error inesperado: " + e.message, "error"); }
+  } catch(e) { setSt(st,"Error inesperado: "+e.message,"error"); }
 }
 
-// ════════════════════════════════════════════════════════════
-//  TESTIMONIOS
-// ════════════════════════════════════════════════════════════
+// ── TESTIMONIOS ─────────────────────────────────────────────
 async function publishTestimonio() {
-  const st = document.getElementById("status-t");
+  const st  = document.getElementById("status-t");
   const btn = document.getElementById("btn-pub-t");
   const modelo_nombre = document.getElementById("t-nombre").value.trim();
   const texto = document.getElementById("t-texto").value.trim();
   const orden = parseInt(document.getElementById("t-orden").value) || 1;
-  if (!modelo_nombre || !texto) { setSt(st, "Nombre y testimonio son obligatorios.", "error"); return; }
-  btn.disabled = true; setSt(st, "Guardando…", "");
+  if (!modelo_nombre || !texto) { setSt(st,"Nombre y testimonio son obligatorios.","error"); return; }
+  btn.disabled = true; setSt(st,"Guardando…","");
   const { error } = await sb.from("testimonios").insert([{ modelo_nombre, texto, orden, activo: true }]);
-  if (error) { setSt(st, "Error: " + error.message, "error"); btn.disabled = false; return; }
-  setSt(st, "✓ Testimonio de "" + modelo_nombre + "" agregado.", "ok");
+  if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
+  setSt(st,`✓ Testimonio de "${modelo_nombre}" agregado.`,"ok");
   btn.disabled = false;
   document.getElementById("t-nombre").value = "";
-  document.getElementById("t-texto").value = "";
+  document.getElementById("t-texto").value  = "";
   renderAdminTestimoniosList();
 }
 
 async function renderAdminTestimoniosList() {
-  const list = document.getElementById("admin-testimonios-list");
+  const list  = document.getElementById("admin-testimonios-list");
   const empty = document.getElementById("admin-testimonios-empty");
   if (!list) return;
   try {
@@ -750,7 +730,7 @@ async function renderAdminTestimoniosList() {
       <div class="admin-list-row">
         <div class="admin-list-info">
           <div class="admin-list-name">${t.modelo_nombre} ${t.activo ? '✓' : '(inactivo)'}</div>
-          <div class="admin-list-meta" style="white-space:normal;line-height:1.4">"${t.texto.slice(0, 80)}…"</div>
+          <div class="admin-list-meta" style="white-space:normal;line-height:1.4">"${t.texto.slice(0,80)}…"</div>
         </div>
         <button class="btn-delete" onclick="deleteTestimonio(${t.id})">Eliminar</button>
       </div>`).join("");
@@ -763,7 +743,6 @@ async function deleteTestimonio(id) {
   showToast("Testimonio eliminado");
   renderAdminTestimoniosList();
 }
-
 </script>
 </body>
 </html>
