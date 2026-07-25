@@ -125,6 +125,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <button class="ap-tab" onclick="switchTab('portada',this)">Editar Portada</button>
     <button class="ap-tab" onclick="switchTab('eventos',this)">Carrusel / Eventos</button>
     <button class="ap-tab" onclick="switchTab('ranking',this)">Ranking</button>
+    <button class="ap-tab" onclick="switchTab('fama',this)">Salón de la Fama</button>
     <button class="ap-tab" onclick="switchTab('testimonios',this)">Testimonios</button>
   </div>
 
@@ -290,6 +291,18 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       </div>
     </div>
 
+    <!-- ── TAB SALÓN DE LA FAMA ─────────────────────────────────── -->
+    <div class="ap-pane" id="tab-fama">
+      <div class="ap-sec-title">Salón de la Fama</div>
+      <div class="ap-sec-sub">Acá queda el registro histórico de todas las que alguna vez llegaron al Top 3, sin importar el ciclo. Se cargan solas cada vez que cerrás un ciclo. Desde acá podés descargar, cuando quieras, la placa JPG especial de cada ganadora (distinta a la que se descargan ellas desde su perfil).</div>
+      <div id="fama-recientes" style="display:none;margin-bottom:28px;padding:20px;border:1px solid var(--gold);background:#fffdf5">
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Recién cerrado — descargá las placas ahora</div>
+        <div id="fama-recientes-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="admin-list" id="admin-fama-list"></div>
+      <div id="admin-fama-empty" class="ap-status" style="display:none">Todavía no hay ganadoras registradas. Se cargan automáticamente al cerrar un ciclo desde la pestaña Ranking.</div>
+    </div>
+
     <!-- ── TAB TESTIMONIOS ────────────────────────────────────── -->
     <div class="ap-pane" id="tab-testimonios">
       <div class="ap-sec-title">Testimonios de modelos</div>
@@ -345,6 +358,7 @@ async function doLogin() {
     fillPortadaForm();
     renderAdminModelosList();
     renderAdminEventosList();
+    renderAdminFamaList();
   } else {
     errEl.textContent = "Contraseña incorrecta.";
     document.getElementById("login-pwd").value = "";
@@ -384,6 +398,7 @@ function switchTab(name, btn) {
   if (name === "portada") fillPortadaForm();
   if (name === "eventos") renderAdminEventosList();
   if (name === "ranking") loadCicloInfo();
+  if (name === "fama") renderAdminFamaList();
   if (name === "testimonios") renderAdminTestimoniosList();
 }
 
@@ -691,13 +706,51 @@ async function cerrarCicloAdmin() {
   if (!confirm("¿Cerrás el ciclo activo y reseteás todos los votos? No se puede deshacer.")) return;
   setSt(st,"Cerrando ciclo…","");
   try {
+    // 1) Guardar snapshot del Top 3 actual en el Salón de la Fama, ANTES de resetear votos.
+    const { data: cicloAct } = await sb.from("ciclos_ranking").select("*").eq("activo", true).maybeSingle();
+    const cicloNombre = cicloAct?.nombre || "Ciclo sin nombre";
+    const top3 = allModels.filter(m => (m.likes_mes || 0) > 0).slice(0, 3);
+    let famaNuevas = [];
+    if (top3.length) {
+      const hoy = new Date().toISOString().slice(0, 10);
+      const rows = top3.map((m, idx) => ({
+        modelo_id: String(m.id), nombre: m.nombre, codigo: m.codigo,
+        foto_perfil_embed: m.foto_perfil_embed, puesto: idx + 1,
+        ciclo_nombre: cicloNombre, fecha_cierre: hoy
+      }));
+      const { data: inserted, error: fErr } = await sb.from("salon_fama").insert(rows).select();
+      if (fErr) {
+        console.warn("No se pudo guardar en Salón de la Fama:", fErr.message);
+      } else {
+        famaNuevas = inserted || [];
+      }
+    }
+
+    // 2) Cerrar el ciclo como siempre (guarda insignias en modelos y resetea votos).
     const { error } = await sb.rpc("cerrar_ciclo_y_resetear");
     if (error) { setSt(st,"Error: "+error.message,"error"); return; }
-    setSt(st,"✓ Ciclo cerrado. Votos reseteados. Insignias del top 3 guardadas.","ok");
+    setSt(st,"✓ Ciclo cerrado. Votos reseteados. Salón de la Fama actualizado.","ok");
+
     await loadData();
     renderAdminModelosList();
     loadCicloInfo();
+    await renderAdminFamaList();
+    mostrarFamaRecientes(famaNuevas);
   } catch(e) { setSt(st,"Error inesperado: "+e.message,"error"); }
+}
+
+function mostrarFamaRecientes(rows) {
+  const box  = document.getElementById("fama-recientes");
+  const list = document.getElementById("fama-recientes-list");
+  if (!box || !list) return;
+  if (!rows || !rows.length) { box.style.display = "none"; return; }
+  const medalla = { 1: "🥇", 2: "🥈", 3: "🥉" };
+  list.innerHTML = rows.map(f => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+      <div style="font-size:12px">${medalla[f.puesto]||''} <strong>${f.nombre}</strong> <span style="color:var(--gray-text)">${f.codigo}</span></div>
+      <button class="btn-submit" style="padding:8px 16px;font-size:8px" onclick="descargarJPGGanadora(${f.id})">Descargar JPG</button>
+    </div>`).join("");
+  box.style.display = "block";
 }
 
 // ── TESTIMONIOS ─────────────────────────────────────────────
@@ -742,6 +795,300 @@ async function deleteTestimonio(id) {
   await sb.from("testimonios").delete().eq("id", id);
   showToast("Testimonio eliminado");
   renderAdminTestimoniosList();
+}
+
+// ── SALÓN DE LA FAMA ────────────────────────────────────────
+let allFama = [];
+
+async function renderAdminFamaList() {
+  const list  = document.getElementById("admin-fama-list");
+  const empty = document.getElementById("admin-fama-empty");
+  if (!list) return;
+  try {
+    const { data, error } = await sb.from("salon_fama").select("*")
+      .order("fecha_cierre", { ascending: false })
+      .order("puesto", { ascending: true });
+    if (error) throw error;
+    allFama = data || [];
+    if (!allFama.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+    empty.style.display = "none";
+    const medalla = { 1: "🥇", 2: "🥈", 3: "🥉" };
+    list.innerHTML = allFama.map(f => `
+      <div class="admin-list-row">
+        <div class="admin-list-thumb"><div class="embed-box" id="fama-th-${f.id}"></div></div>
+        <div class="admin-list-info">
+          <div class="admin-list-name">${medalla[f.puesto]||''} ${f.nombre} <span style="color:var(--gray-text);font-weight:400;font-size:12px">${f.codigo}</span></div>
+          <div class="admin-list-meta">${f.ciclo_nombre} · Top ${f.puesto} · ${f.fecha_cierre}</div>
+        </div>
+        <button class="btn-submit" style="padding:8px 14px;font-size:8px;margin-right:8px;white-space:nowrap" onclick="descargarJPGGanadora(${f.id})">Descargar JPG</button>
+        <button class="btn-delete" onclick="eliminarFama(${f.id})">Eliminar</button>
+      </div>`).join("");
+    allFama.forEach(f => injectEmbedAdmin("fama-th-"+f.id, f.foto_perfil_embed));
+  } catch(e) {
+    list.innerHTML = "";
+    empty.style.display = "block";
+    empty.textContent = "Error al cargar el Salón de la Fama: " + e.message;
+  }
+}
+
+function injectEmbedAdmin(elId, embedCode) {
+  const el = document.getElementById(elId);
+  if (!el || !embedCode) return;
+  const raw = embedCode.trim();
+  if (/^https?:\/\/\S+$/i.test(raw) && !/[<>]/.test(raw)) {
+    el.innerHTML = `<img src="${raw}" style="width:100%;height:100%;object-fit:cover" loading="lazy">`;
+  } else {
+    el.innerHTML = raw;
+  }
+}
+
+async function eliminarFama(id) {
+  if (!confirm("¿Eliminar este registro del Salón de la Fama? No se puede deshacer.")) return;
+  const { error } = await sb.from("salon_fama").delete().eq("id", id);
+  if (error) { showToast("Error: " + error.message); return; }
+  allFama = allFama.filter(f => String(f.id) !== String(id));
+  showToast("Registro eliminado del Salón de la Fama");
+  renderAdminFamaList();
+}
+
+// ── PLACA JPG ESPECIAL DE GANADORA (solo admin) ─────────────
+// Formato historia de Instagram (9:16), estética oscura y premium,
+// marco metálico dorado/plateado/bronce según el puesto.
+const IMAR_LOGO_URL = "https://i.ibb.co/HDRLbntG/88053bc3-cc24-4541-8c12-1017a47ec874.png";
+let _imarLogoWhiteCacheAdmin = null;
+
+function loadImageCORS(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("No se pudo cargar la imagen: " + src));
+    img.src = src;
+  });
+}
+
+function prepareLogoWhite(img) {
+  const c = document.createElement("canvas");
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const cx = c.getContext("2d");
+  cx.drawImage(img, 0, 0);
+  const data = cx.getImageData(0, 0, c.width, c.height);
+  const d = data.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = (d[i] + d[i+1] + d[i+2]) / 3;
+    if (lum > 235) { d[i+3] = 0; }
+    else if (lum > 170) { d[i+3] = Math.round(255 * (1 - (lum-170)/65)); }
+  }
+  cx.putImageData(data, 0, 0);
+  cx.globalCompositeOperation = "source-in";
+  cx.fillStyle = "#ffffff";
+  cx.fillRect(0, 0, c.width, c.height);
+  cx.globalCompositeOperation = "source-over";
+  return c;
+}
+
+async function getImarLogoWhiteAdmin() {
+  if (_imarLogoWhiteCacheAdmin) return _imarLogoWhiteCacheAdmin;
+  const img = await loadImageCORS(IMAR_LOGO_URL);
+  _imarLogoWhiteCacheAdmin = prepareLogoWhite(img);
+  return _imarLogoWhiteCacheAdmin;
+}
+
+function slugify(str) {
+  return (str || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase() || "modelo";
+}
+
+function fillTextSpaced(ctx, text, cx, y, spacing) {
+  const chars = text.split("");
+  let totalWidth = 0;
+  chars.forEach((c, i) => {
+    totalWidth += ctx.measureText(c).width;
+    if (i < chars.length - 1) totalWidth += spacing;
+  });
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = "left";
+  let x = cx - totalWidth / 2;
+  chars.forEach(c => {
+    ctx.fillText(c, x, y);
+    x += ctx.measureText(c).width + spacing;
+  });
+  ctx.textAlign = prevAlign;
+}
+
+function wrapCenteredText(ctx, text, cx, y, maxWidth, lineHeight) {
+  const words = text.split(" ");
+  let line = "";
+  const lines = [];
+  for (const w of words) {
+    const test = line ? line + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line); line = w;
+    } else { line = test; }
+  }
+  if (line) lines.push(line);
+  const startY = y - (lines.length - 1) * lineHeight;
+  lines.forEach((l, i) => ctx.fillText(l, cx, startY + i * lineHeight));
+  return lines.length;
+}
+
+// Paletas por puesto: 1=oro, 2=plata, 3=bronce
+const PUESTO_STYLE = {
+  1: { base: "#D4AF37", light: "#F3DA8C", label: "TOP 1 DEL MES", tag: "GANADORA DEL MES" },
+  2: { base: "#B9B9B9", light: "#E7E7E7", label: "TOP 2 DEL MES", tag: "SALÓN DE LA FAMA" },
+  3: { base: "#CD7F32", light: "#E7B27F", label: "TOP 3 DEL MES", tag: "SALÓN DE LA FAMA" }
+};
+
+async function descargarJPGGanadora(famaId) {
+  const f = allFama.find(x => String(x.id) === String(famaId));
+  if (!f) { showToast("No se encontró el registro"); return; }
+  const photoUrl = getEmbedShareUrlAdmin(f.foto_perfil_embed);
+  if (!photoUrl) { showToast("Esta ganadora no tiene foto de perfil cargada"); return; }
+
+  showToast("Generando placa…");
+  try {
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load("italic 700 78px 'Playfair Display'"),
+        document.fonts.load("800 66px 'Montserrat'"),
+        document.fonts.load("600 20px 'Montserrat'")
+      ]).catch(()=>{});
+    }
+
+    const [photoImg, logoCanvas] = await Promise.all([
+      loadImageCORS(photoUrl),
+      getImarLogoWhiteAdmin().catch(() => null)
+    ]);
+
+    const W = 1080, H = 1920;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    const style = PUESTO_STYLE[f.puesto] || PUESTO_STYLE[3];
+    const GOLD = style.base, GOLD_LIGHT = style.light;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    const scale = Math.max(W / photoImg.width, H / photoImg.height);
+    const dw = photoImg.width * scale, dh = photoImg.height * scale;
+    const dx = (W - dw) / 2, dy = (H - dh) / 2;
+    ctx.drawImage(photoImg, dx, dy, dw, dh);
+
+    const vig = ctx.createRadialGradient(W/2, H*0.42, H*0.25, W/2, H*0.42, H*0.75);
+    vig.addColorStop(0, "rgba(0,0,0,0)");
+    vig.addColorStop(1, "rgba(0,0,0,.30)");
+    ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
+    let grad = ctx.createLinearGradient(0, 0, 0, H * 0.28);
+    grad.addColorStop(0, "rgba(0,0,0,.6)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H * 0.28);
+
+    grad = ctx.createLinearGradient(0, H * 0.32, 0, H);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(0.45, "rgba(0,0,0,.35)");
+    grad.addColorStop(0.72, "rgba(0,0,0,.72)");
+    grad.addColorStop(1, "rgba(0,0,0,.96)");
+    ctx.fillStyle = grad; ctx.fillRect(0, H * 0.32, W, H * 0.68);
+
+    // Logo, arriba centrado
+    let cursorY = 64;
+    if (logoCanvas) {
+      const logoW = 240;
+      const logoH = logoCanvas.height * (logoW / logoCanvas.width);
+      ctx.drawImage(logoCanvas, (W - logoW) / 2, cursorY, logoW, logoH);
+      cursorY += logoH + 40;
+    } else {
+      cursorY += 30;
+    }
+
+    // Etiqueta "SALÓN DE LA FAMA"
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,.75)";
+    ctx.font = "600 14px 'Montserrat', Helvetica, sans-serif";
+    fillTextSpaced(ctx, "✦ SALÓN DE LA FAMA · " + (f.ciclo_nombre || "").toUpperCase() + " ✦", W/2, cursorY, 3.5);
+    cursorY += 40;
+
+    // Marco metálico + "TOP N DEL MES" — según puesto
+    const inset = 26;
+    const frameGrad = ctx.createLinearGradient(0, 0, 0, H);
+    frameGrad.addColorStop(0, GOLD_LIGHT);
+    frameGrad.addColorStop(0.5, GOLD);
+    frameGrad.addColorStop(1, GOLD_LIGHT);
+    ctx.save();
+    ctx.shadowColor = GOLD + "8c";
+    ctx.shadowBlur = 22;
+    ctx.strokeStyle = frameGrad;
+    ctx.lineWidth = 5;
+    ctx.strokeRect(inset, inset, W - inset * 2, H - inset * 2);
+    ctx.restore();
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = GOLD_LIGHT;
+    ctx.font = "600 26px 'Montserrat', Helvetica, sans-serif";
+    fillTextSpaced(ctx, "✦ " + style.label + " ✦", W/2, cursorY, 6);
+    cursorY += 56;
+
+    // Nombre
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 18;
+    ctx.font = "italic 700 78px 'Playfair Display', Georgia, serif";
+    const nameLines = wrapCenteredText(ctx, f.nombre || "", W/2, H - 300, W - 140, 84);
+    ctx.shadowBlur = 0;
+
+    // Código de búsqueda
+    const labelY = H - 300 + (nameLines - 1) * 84 + 78;
+    ctx.font = "600 20px 'Montserrat', Helvetica, sans-serif";
+    ctx.fillStyle = GOLD_LIGHT;
+    fillTextSpaced(ctx, "MI CÓDIGO DE BÚSQUEDA", W/2, labelY, 4.5);
+
+    ctx.font = "800 66px 'Montserrat', Helvetica, sans-serif";
+    ctx.fillStyle = "#fff";
+    ctx.shadowColor = "rgba(0,0,0,.4)"; ctx.shadowBlur = 10;
+    ctx.fillText(f.codigo || "", W/2, labelY + 78);
+    ctx.shadowBlur = 0;
+
+    // Marca al pie
+    ctx.font = "500 22px 'Montserrat', Helvetica, sans-serif";
+    ctx.fillStyle = "rgba(255,255,255,.55)";
+    ctx.fillText("imar source", W/2, H - 46);
+
+    canvas.toBlob((blob) => {
+      if (!blob) { showToast("No se pudo generar la imagen"); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `salon-fama-${slugify(f.nombre)}-${slugify(f.codigo)}-top${f.puesto}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast("¡Placa guardada!");
+    }, "image/jpeg", 0.92);
+
+  } catch (e) {
+    console.error(e);
+    showToast("No se pudo generar la placa. Probá de nuevo o revisá la conexión.");
+  }
+}
+
+function getEmbedShareUrlAdmin(embedCode) {
+  if (!embedCode) return null;
+  const raw = embedCode.trim();
+  if (/^https?:\/\/\S+$/i.test(raw) && !/[<>]/.test(raw)) return raw;
+  const tmp = document.createElement("div");
+  tmp.innerHTML = raw;
+  const img = tmp.querySelector("img");
+  if (img && img.src) return img.src;
+  const iframe = tmp.querySelector("iframe");
+  if (iframe && iframe.src) return iframe.src;
+  return null;
 }
 </script>
 </body>
