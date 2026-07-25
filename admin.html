@@ -102,27 +102,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <div class="al-title"><em>imar</em> source</div>
     <div class="al-sub" style="margin-top:8px">Panel de administración</div>
   </div>
-  <div class="al-field">
-    <label>Correo electrónico</label>
-    <input type="email" id="login-email" autocomplete="username"
-           onkeydown="if(event.key==='Enter')document.getElementById('login-pwd').focus()">
-  </div>
-  <div class="al-field">
-    <label>Contraseña</label>
-    <input type="password" id="login-pwd" autocomplete="current-password"
-           onkeydown="if(event.key==='Enter')doLogin()">
-  </div>
-  <div id="login-error"></div>
-  <button class="btn-primary" id="btn-login" onclick="doLogin()">Acceder</button>
-</div>
-
-<!-- ══ PANEL ADMIN ════════════════════════════════════════════ -->
-<div id="admin-panel">
-  <div class="ap-header">
-    <div>
-      <div class="ap-title">Panel Admin <span>imar source</span></div>
-      <div class="ap-user" id="ap-user-email"></div>
-    </div>
+  
     <button id="ap-logout" onclick="doLogout()">Cerrar sesión</button>
   </div>
 
@@ -284,7 +264,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div class="ap-sec-sub">Ciclo activo del ranking mensual. Cuando cerrás el ciclo, se guardan las insignias del top 3 y se resetean los votos. Creá el siguiente ciclo antes de cerrarlo para que el banner del sitio se actualice solo.</div>
 
       <div class="form-grid">
-        <div class="ff"><label>Nombre del ciclo</label><input type="text" id="rk-nombre" placeholder="Agosto 2025"></div>
+        <div class="ff"><label>Nombre del ciclo</label><input type="text" id="rk-nombre" placeholder="Agosto 2026"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="ff"><label>Fecha de inicio</label><input type="date" id="rk-inicio"></div>
           <div class="ff"><label>Fecha de cierre</label><input type="date" id="rk-cierre"></div>
@@ -354,50 +334,19 @@ function initSB() {
 }
 
 async function doLogin() {
-  const email = document.getElementById("login-email").value.trim();
-  const pwd   = document.getElementById("login-pwd").value;
-  const errEl = document.getElementById("login-error");
-  const btn   = document.getElementById("btn-login");
-  if (!email || !pwd) { errEl.textContent = "Completá todos los campos."; return; }
-  btn.disabled = true; errEl.textContent = "Verificando…";
-  initSB();
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
-  if (error) {
-    errEl.textContent = "Credenciales incorrectas.";
-    btn.disabled = false;
-    return;
-  }
-  document.getElementById("login-screen").classList.add("hidden");
-  document.getElementById("admin-panel").classList.add("open");
-  document.getElementById("ap-user-email").textContent = data.user.email;
-  await loadData();
-  populateModelSelect();
-  populateEditModelSelect();
-  fillPortadaForm();
-  renderAdminModelosList();
-  renderAdminEventosList();
-}
-
-async function doLogout() {
-  initSB();
-  await sb.auth.signOut();
-  location.reload();
-}
-
-// Al cargar: verificar sesión activa
-window.addEventListener("DOMContentLoaded", async () => {
-  initSB();
-  const { data } = await sb.auth.getSession();
-  if (data.session) {
+  const pwd = document.getElementById("login-pwd").value;
+  if (pwd === "imarsource2025") {
     document.getElementById("login-screen").classList.add("hidden");
     document.getElementById("admin-panel").classList.add("open");
-    document.getElementById("ap-user-email").textContent = data.session.user.email;
+    document.getElementById("ap-user-email").textContent = "admin";
     await loadData();
     populateModelSelect();
     populateEditModelSelect();
     fillPortadaForm();
     renderAdminModelosList();
     renderAdminEventosList();
+  } else {
+    document.getElementById("login-error").textContent = "Contraseña incorrecta.";
   }
 });
 
