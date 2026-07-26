@@ -6,7 +6,7 @@
 <title>Admin — imar source</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,900;1,400;1,700;1,900&family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -83,6 +83,36 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 .btn-delete{border:1px solid #c0392b;background:none;color:#c0392b;font-family:var(--sans);font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:8px 14px;cursor:pointer;transition:all var(--ease);flex-shrink:0}
 .btn-delete:hover{background:#c0392b;color:var(--white)}
 .admin-sub-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);margin-top:40px;margin-bottom:6px}
+
+/* ── EDITOR DE PORTADA (tapa de revista) ─────────────────── */
+.portada-grid{display:grid;grid-template-columns:1fr 320px;gap:44px;align-items:start}
+@media(max-width:1150px){.portada-grid{grid-template-columns:1fr}}
+.layer-block{border:1px solid var(--gray-mid);padding:22px;margin-bottom:20px}
+.layer-block-title{font-family:var(--serif);font-size:15px;margin-bottom:4px}
+.layer-block-hint{font-size:9px;color:var(--gray-text);margin-bottom:16px;line-height:1.7}
+.field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-top:14px}
+.field-row-5{display:grid;grid-template-columns:1fr 1fr 1fr 56px 1fr;gap:12px;margin-top:14px;align-items:end}
+.mini-label{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-text);display:block;margin-bottom:5px}
+.mini-input{width:100%;border:none;border-bottom:1px solid var(--gray-mid);background:transparent;font-family:var(--sans);font-size:12px;letter-spacing:.02em;color:var(--black);padding:7px 2px;outline:none}
+.mini-input:focus{border-bottom-color:var(--black)}
+.mini-color{width:100%;height:30px;border:1px solid var(--gray-mid);padding:0;cursor:pointer;background:none}
+.layer-row{display:grid;grid-template-columns:1.6fr 60px 60px 60px 44px 84px 26px;gap:8px;align-items:end;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--gray-mid)}
+.layer-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.layer-row label{font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray-text);display:block;margin-bottom:4px}
+.layer-row input[type=text],.layer-row input[type=number]{width:100%;border:none;border-bottom:1px solid var(--gray-mid);background:transparent;font-family:var(--sans);font-size:12px;padding:6px 2px;outline:none}
+.layer-row select{width:100%;border:none;border-bottom:1px solid var(--gray-mid);background:transparent;font-family:var(--sans);font-size:11px;padding:6px 2px;outline:none}
+.layer-row input[type=color]{width:36px;height:28px;border:1px solid var(--gray-mid);padding:0;cursor:pointer;background:none}
+.btn-mini-del{border:1px solid #c0392b;background:none;color:#c0392b;font-size:13px;line-height:1;padding:7px 9px;cursor:pointer;transition:all var(--ease)}
+.btn-mini-del:hover{background:#c0392b;color:#fff}
+.btn-add-row{background:none;border:1px dashed var(--gray-text);font-family:var(--sans);font-size:9px;letter-spacing:.15em;text-transform:uppercase;padding:12px 16px;cursor:pointer;color:var(--gray-text);width:100%;transition:all var(--ease)}
+.btn-add-row:hover{border-color:var(--black);color:var(--black)}
+.mini-preview-wrap{position:sticky;top:24px}
+.mini-preview-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray-text);margin-bottom:10px}
+.mini-preview{position:relative;width:100%;aspect-ratio:4/5;background:#111 center/cover no-repeat;overflow:hidden;border:1px solid var(--black)}
+.mini-preview-empty{display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.4);font-size:9px;letter-spacing:.15em;text-transform:uppercase;height:100%;text-align:center;padding:20px}
+.mp-layer{position:absolute;white-space:pre-wrap;line-height:1.15;text-shadow:0 2px 8px rgba(0,0,0,.55);max-width:90%}
+.mp-logo,.mp-wm{position:absolute;pointer-events:none}
+.mini-preview-note{font-size:9px;color:var(--gray-text);margin-top:10px;line-height:1.6}
 
 /* Insignias */
 .insignia-chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--gray-mid);padding:7px 10px;font-size:10px;letter-spacing:.03em;background:var(--gray-light)}
@@ -237,17 +267,112 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <!-- ── TAB PORTADA ──────────────────────────────────────── -->
     <div class="ap-pane" id="tab-portada">
       <div class="ap-sec-title">Portada de la Temporada</div>
-      <div class="ap-sec-sub">La imagen y el titular que aparecen al inicio del sitio.</div>
-      <div class="form-grid">
-        <div class="ff">
-          <label>URL de la imagen de fondo</label>
-          <input type="url" id="p-imagen" placeholder="https://…/portada.jpg">
-        </div>
-        <div class="ff"><label>Titular de la temporada</label><input type="text" id="p-titular" placeholder="Edición Primavera / Verano"></div>
-        <div class="ff"><label>Subtítulo</label><input type="text" id="p-subtitulo" placeholder="Las tendencias que marcan la temporada."></div>
+      <div class="ap-sec-sub">Diseñá la tapa como una portada de revista: imagen, logo, titular, líneas secundarias, bajadas, nombre del personaje y marca de agua. Cada elemento tiene su propia posición, tamaño y color. La vista previa de la derecha se actualiza en vivo mientras escribís.</div>
+
+      <div class="portada-grid">
         <div>
-          <button class="btn-submit" id="btn-pub-p" onclick="savePortada()">Guardar Portada</button>
-          <div class="ap-status" id="status-p"></div>
+
+          <!-- Imagen principal -->
+          <div class="layer-block">
+            <div class="layer-block-title">Imagen principal</div>
+            <div class="layer-block-hint">Pegá el link directo a la foto de fondo (subila antes a ImgBB u otro hosting gratuito). Se recomienda formato vertical.</div>
+            <div class="ff"><input type="url" id="p-imagen" placeholder="https://…/portada.jpg" oninput="onPortadaFieldChange()"></div>
+          </div>
+
+          <!-- Cabecera / Logo -->
+          <div class="layer-block">
+            <div class="layer-block-title">Cabecera (logo)</div>
+            <div class="layer-block-hint">Logo que aparece sobre la tapa. Podés ver y corregir su tamaño y el lugar donde va a estar.</div>
+            <div class="ff"><label>URL del logo</label><input type="url" id="lg-url" oninput="onPortadaFieldChange()"></div>
+            <div class="field-row-3">
+              <div><span class="mini-label">Posición vertical (%)</span><input type="number" class="mini-input" id="lg-top" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Posición horizontal (%)</span><input type="number" class="mini-input" id="lg-left" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Ancho (px)</span><input type="number" class="mini-input" id="lg-width" min="20" max="600" oninput="onPortadaFieldChange()"></div>
+            </div>
+          </div>
+
+          <!-- Titular -->
+          <div class="layer-block">
+            <div class="layer-block-title">Titular de portada</div>
+            <div class="layer-block-hint">Fuente Playfair Display Black Italic (equivalente a "Play Display Black Italic").</div>
+            <div class="ff"><input type="text" id="tt-text" placeholder="Edición Primavera / Verano" oninput="onPortadaFieldChange()"></div>
+            <div class="field-row-5">
+              <div><span class="mini-label">Vertical %</span><input type="number" class="mini-input" id="tt-top" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Horizontal %</span><input type="number" class="mini-input" id="tt-left" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Tamaño px</span><input type="number" class="mini-input" id="tt-size" min="10" max="200" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Color</span><input type="color" class="mini-color" id="tt-color" oninput="onPortadaFieldChange()"></div>
+              <div>
+                <span class="mini-label">Alineación</span>
+                <select class="mini-input" id="tt-align" onchange="onPortadaFieldChange()">
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Líneas secundarias -->
+          <div class="layer-block">
+            <div class="layer-block-title">Líneas de portada secundarias</div>
+            <div class="layer-block-hint">Los títulos chicos tipo "HOUSE TOUR" o "SHE'S WORKING LATE". Agregá tantas como quieras, cada una con su propia posición, tamaño y color.</div>
+            <div id="sec-rows"></div>
+            <button type="button" class="btn-add-row" onclick="addSecundaria()">+ Agregar línea secundaria</button>
+          </div>
+
+          <!-- Bajadas -->
+          <div class="layer-block">
+            <div class="layer-block-title">Bajadas o subtítulos</div>
+            <div class="layer-block-hint">Fuente Montserrat Light. El texto chico que acompaña a una línea secundaria o al titular.</div>
+            <div id="baj-rows"></div>
+            <button type="button" class="btn-add-row" onclick="addBajada()">+ Agregar bajada</button>
+          </div>
+
+          <!-- Nombre del personaje -->
+          <div class="layer-block">
+            <div class="layer-block-title">Nombre del personaje</div>
+            <div class="layer-block-hint">El nombre de la modelo que aparece en la tapa, por ejemplo "SABRINA CARPENTER".</div>
+            <div class="ff"><input type="text" id="pj-text" placeholder="NOMBRE APELLIDO" oninput="onPortadaFieldChange()"></div>
+            <div class="field-row-5">
+              <div><span class="mini-label">Vertical %</span><input type="number" class="mini-input" id="pj-top" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Horizontal %</span><input type="number" class="mini-input" id="pj-left" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Tamaño px</span><input type="number" class="mini-input" id="pj-size" min="10" max="120" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Color</span><input type="color" class="mini-color" id="pj-color" oninput="onPortadaFieldChange()"></div>
+              <div>
+                <span class="mini-label">Alineación</span>
+                <select class="mini-input" id="pj-align" onchange="onPortadaFieldChange()">
+                  <option value="left">Izquierda</option>
+                  <option value="center">Centro</option>
+                  <option value="right">Derecha</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Marca de agua -->
+          <div class="layer-block">
+            <div class="layer-block-title">Crédito / marca de agua</div>
+            <div class="layer-block-hint">Pegá el código de embebido de tu marca de agua (link directo a imagen, o un &lt;img&gt;/iframe completo). La podés reemplazar cuando quieras sin tocar el resto de la portada.</div>
+            <div class="ff"><textarea id="wm-embed" rows="3" placeholder='https://…/marca.png o &lt;img src="…"&gt;' oninput="onPortadaFieldChange()"></textarea></div>
+            <div class="field-row-3">
+              <div><span class="mini-label">Vertical %</span><input type="number" class="mini-input" id="wm-top" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Horizontal %</span><input type="number" class="mini-input" id="wm-left" min="0" max="100" oninput="onPortadaFieldChange()"></div>
+              <div><span class="mini-label">Ancho px</span><input type="number" class="mini-input" id="wm-width" min="10" max="400" oninput="onPortadaFieldChange()"></div>
+            </div>
+          </div>
+
+          <div>
+            <button class="btn-submit" id="btn-pub-p" onclick="savePortada()">Guardar Portada</button>
+            <div class="ap-status" id="status-p"></div>
+          </div>
+        </div>
+
+        <div class="mini-preview-wrap">
+          <div class="mini-preview-label">Vista previa en vivo</div>
+          <div class="mini-preview" id="mp-box">
+            <div class="mini-preview-empty" id="mp-empty">Sin imagen de fondo</div>
+          </div>
+          <div class="mini-preview-note">Escala aproximada para ubicar los elementos. En el sitio la tapa se ajusta al ancho real de cada pantalla; los porcentajes de posición se mantienen siempre.</div>
         </div>
       </div>
     </div>
@@ -513,27 +638,220 @@ async function updateModel() {
   renderAdminModelosList();
 }
 
+// ── EDITOR DE PORTADA (tapa de revista con capas) ───────────
+const DEFAULT_COVER_LOGO = "https://i.ibb.co/h0XNGpb/54-sin-t-tulo-20260726015938.png";
+let curSecundarias = [];
+let curBajadas = [];
+
+function defaultCoverLayout() {
+  return {
+    logo: { url: DEFAULT_COVER_LOGO, top: 6, left: 50, width: 170 },
+    titular: { text: "", top: 58, left: 50, size: 64, color: "#ffffff", align: "center" },
+    secundarias: [],
+    bajadas: [],
+    personaje: { text: "", top: 92, left: 10, size: 24, color: "#ffffff", align: "left" },
+    marca_agua: { embed: "", top: 95, left: 90, width: 90 }
+  };
+}
+
+function getLayoutFromState() {
+  const d = defaultCoverLayout();
+  const l = (heroPortada && heroPortada.layout) ? heroPortada.layout : {};
+  return {
+    logo: Object.assign({}, d.logo, l.logo || {}),
+    titular: Object.assign({}, d.titular, l.titular || {}),
+    secundarias: Array.isArray(l.secundarias) ? l.secundarias.map(x => Object.assign({}, x)) : [],
+    bajadas: Array.isArray(l.bajadas) ? l.bajadas.map(x => Object.assign({}, x)) : [],
+    personaje: Object.assign({}, d.personaje, l.personaje || {}),
+    marca_agua: Object.assign({}, d.marca_agua, l.marca_agua || {})
+  };
+}
+
 function fillPortadaForm() {
   const imgEl = document.getElementById("p-imagen");
   if (!imgEl) return;
+  const L = getLayoutFromState();
+
   imgEl.value = heroPortada.imagen_url || "";
-  document.getElementById("p-titular").value   = heroPortada.titular   || "";
-  document.getElementById("p-subtitulo").value = heroPortada.subtitulo || "";
+
+  document.getElementById("lg-url").value = L.logo.url || "";
+  document.getElementById("lg-top").value = L.logo.top;
+  document.getElementById("lg-left").value = L.logo.left;
+  document.getElementById("lg-width").value = L.logo.width;
+
+  document.getElementById("tt-text").value = L.titular.text || heroPortada.titular || "";
+  document.getElementById("tt-top").value = L.titular.top;
+  document.getElementById("tt-left").value = L.titular.left;
+  document.getElementById("tt-size").value = L.titular.size;
+  document.getElementById("tt-color").value = L.titular.color || "#ffffff";
+  document.getElementById("tt-align").value = L.titular.align || "center";
+
+  document.getElementById("pj-text").value = L.personaje.text || "";
+  document.getElementById("pj-top").value = L.personaje.top;
+  document.getElementById("pj-left").value = L.personaje.left;
+  document.getElementById("pj-size").value = L.personaje.size;
+  document.getElementById("pj-color").value = L.personaje.color || "#ffffff";
+  document.getElementById("pj-align").value = L.personaje.align || "left";
+
+  document.getElementById("wm-embed").value = L.marca_agua.embed || "";
+  document.getElementById("wm-top").value = L.marca_agua.top;
+  document.getElementById("wm-left").value = L.marca_agua.left;
+  document.getElementById("wm-width").value = L.marca_agua.width;
+
+  curSecundarias = L.secundarias;
+  curBajadas = L.bajadas;
+  renderSecRows();
+  renderBajRows();
+  renderMiniPreview();
+}
+
+function escAttr(s) { return String(s == null ? "" : s).replace(/"/g, "&quot;"); }
+function escHtml(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+function layerRowTemplate(item, idx, kind) {
+  return `
+    <div class="layer-row">
+      <div><label>Texto</label><input type="text" value="${escAttr(item.text)}" oninput="updateRowField('${kind}',${idx},'text',this.value)"></div>
+      <div><label>Vert %</label><input type="number" min="0" max="100" value="${item.top ?? 50}" oninput="updateRowField('${kind}',${idx},'top',this.value)"></div>
+      <div><label>Horiz %</label><input type="number" min="0" max="100" value="${item.left ?? 50}" oninput="updateRowField('${kind}',${idx},'left',this.value)"></div>
+      <div><label>Tam px</label><input type="number" min="8" max="150" value="${item.size ?? 16}" oninput="updateRowField('${kind}',${idx},'size',this.value)"></div>
+      <div><label>Color</label><input type="color" value="${item.color || '#ffffff'}" oninput="updateRowField('${kind}',${idx},'color',this.value)"></div>
+      <div><label>Align</label>
+        <select onchange="updateRowField('${kind}',${idx},'align',this.value)">
+          <option value="left" ${item.align === 'left' ? 'selected' : ''}>Izq.</option>
+          <option value="center" ${(!item.align || item.align === 'center') ? 'selected' : ''}>Centro</option>
+          <option value="right" ${item.align === 'right' ? 'selected' : ''}>Der.</option>
+        </select>
+      </div>
+      <button type="button" class="btn-mini-del" onclick="removeLayerRow('${kind}',${idx})">✕</button>
+    </div>`;
+}
+
+function renderSecRows() {
+  const el = document.getElementById("sec-rows");
+  el.innerHTML = curSecundarias.length
+    ? curSecundarias.map((it, i) => layerRowTemplate(it, i, "sec")).join("")
+    : '<div class="ap-status">Todavía no agregaste líneas secundarias.</div>';
+}
+function renderBajRows() {
+  const el = document.getElementById("baj-rows");
+  el.innerHTML = curBajadas.length
+    ? curBajadas.map((it, i) => layerRowTemplate(it, i, "baj")).join("")
+    : '<div class="ap-status">Todavía no agregaste bajadas.</div>';
+}
+
+function addSecundaria() {
+  curSecundarias.push({ text: "NUEVA LÍNEA", top: 40, left: 82, size: 20, color: "#ffffff", align: "right" });
+  renderSecRows(); renderMiniPreview();
+}
+function addBajada() {
+  curBajadas.push({ text: "Texto de bajada", top: 46, left: 82, size: 11, color: "#ffffff", align: "right" });
+  renderBajRows(); renderMiniPreview();
+}
+function removeLayerRow(kind, idx) {
+  if (kind === "sec") { curSecundarias.splice(idx, 1); renderSecRows(); }
+  else { curBajadas.splice(idx, 1); renderBajRows(); }
+  renderMiniPreview();
+}
+function updateRowField(kind, idx, field, value) {
+  const arr = kind === "sec" ? curSecundarias : curBajadas;
+  if (!arr[idx]) return;
+  arr[idx][field] = (field === "top" || field === "left" || field === "size") ? Number(value) : value;
+  renderMiniPreview();
+}
+
+function onPortadaFieldChange() { renderMiniPreview(); }
+
+function buildLayoutFromForm() {
+  return {
+    logo: {
+      url: document.getElementById("lg-url").value.trim(),
+      top: Number(document.getElementById("lg-top").value) || 0,
+      left: Number(document.getElementById("lg-left").value) || 0,
+      width: Number(document.getElementById("lg-width").value) || 150
+    },
+    titular: {
+      text: document.getElementById("tt-text").value,
+      top: Number(document.getElementById("tt-top").value) || 0,
+      left: Number(document.getElementById("tt-left").value) || 0,
+      size: Number(document.getElementById("tt-size").value) || 48,
+      color: document.getElementById("tt-color").value,
+      align: document.getElementById("tt-align").value
+    },
+    secundarias: curSecundarias,
+    bajadas: curBajadas,
+    personaje: {
+      text: document.getElementById("pj-text").value,
+      top: Number(document.getElementById("pj-top").value) || 0,
+      left: Number(document.getElementById("pj-left").value) || 0,
+      size: Number(document.getElementById("pj-size").value) || 20,
+      color: document.getElementById("pj-color").value,
+      align: document.getElementById("pj-align").value
+    },
+    marca_agua: {
+      embed: document.getElementById("wm-embed").value,
+      top: Number(document.getElementById("wm-top").value) || 0,
+      left: Number(document.getElementById("wm-left").value) || 0,
+      width: Number(document.getElementById("wm-width").value) || 80
+    }
+  };
+}
+
+function mpPositionStyle(cfg) {
+  const align = cfg.align || "center";
+  let tx = "-50%";
+  if (align === "left") tx = "0%"; else if (align === "right") tx = "-100%";
+  return `top:${cfg.top}%; left:${cfg.left}%; transform:translate(${tx},-50%); text-align:${align}; font-size:${cfg.size}px; color:${cfg.color || '#fff'};`;
+}
+
+function renderMiniPreview() {
+  const box = document.getElementById("mp-box");
+  if (!box) return;
+  const imagen = document.getElementById("p-imagen").value.trim();
+  const L = buildLayoutFromForm();
+  box.style.backgroundImage = imagen ? `url('${imagen}')` : "none";
+
+  let html = imagen ? "" : '<div class="mini-preview-empty">Sin imagen de fondo</div>';
+  if (L.logo.url) {
+    html += `<img class="mp-logo" src="${escAttr(L.logo.url)}" style="top:${L.logo.top}%; left:${L.logo.left}%; width:${L.logo.width * 0.32}px; transform:translate(-50%,-50%)">`;
+  }
+  if (L.titular.text) {
+    html += `<div class="mp-layer" style="${mpPositionStyle(L.titular)} font-family:'Playfair Display',serif; font-style:italic; font-weight:900;">${escHtml(L.titular.text)}</div>`;
+  }
+  L.secundarias.forEach(it => {
+    if (!it.text) return;
+    html += `<div class="mp-layer" style="${mpPositionStyle(it)} font-family:'Montserrat',sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:.03em;">${escHtml(it.text)}</div>`;
+  });
+  L.bajadas.forEach(it => {
+    if (!it.text) return;
+    html += `<div class="mp-layer" style="${mpPositionStyle(it)} font-family:'Montserrat',sans-serif; font-weight:300;">${escHtml(it.text)}</div>`;
+  });
+  if (L.personaje.text) {
+    html += `<div class="mp-layer" style="${mpPositionStyle(L.personaje)} font-family:'Montserrat',sans-serif; font-weight:800; text-transform:uppercase; letter-spacing:.03em;">${escHtml(L.personaje.text)}</div>`;
+  }
+  const wmUrl = getEmbedShareUrlAdmin(L.marca_agua.embed);
+  if (wmUrl) {
+    html += `<img class="mp-wm" src="${escAttr(wmUrl)}" style="top:${L.marca_agua.top}%; left:${L.marca_agua.left}%; width:${L.marca_agua.width * 0.32}px; transform:translate(-50%,-50%)">`;
+  }
+  box.innerHTML = html;
 }
 
 async function savePortada() {
   const st  = document.getElementById("status-p");
   const btn = document.getElementById("btn-pub-p");
   const imagen_url = document.getElementById("p-imagen").value.trim();
-  const titular    = document.getElementById("p-titular").value.trim();
-  const subtitulo  = document.getElementById("p-subtitulo").value.trim();
+  if (!imagen_url) { setSt(st, "La imagen de fondo es obligatoria.", "error"); return; }
+  const layout = buildLayoutFromForm();
+  const titular = layout.titular.text || "";
+  const subtitulo = (layout.bajadas[0] && layout.bajadas[0].text) || "";
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("portada").upsert([{
-    id: PORTADA_ID, imagen_url, titular, subtitulo
+    id: PORTADA_ID, imagen_url, titular, subtitulo, layout
   }]).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   heroPortada = data[0];
   setSt(st,"✓ Portada actualizada.","ok");
+  showToast("Portada guardada");
   btn.disabled = false;
 }
 
