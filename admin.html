@@ -162,6 +162,8 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <button class="ap-tab" onclick="switchTab('ranking',this)">Ranking</button>
     <button class="ap-tab" onclick="switchTab('fama',this)">Salón de la Fama</button>
     <button class="ap-tab" onclick="switchTab('testimonios',this)">Testimonios</button>
+    <button class="ap-tab" onclick="switchTab('cuentas',this)">Cuentas</button>
+    <button class="ap-tab" onclick="switchTab('notificaciones',this)">Notificaciones</button>
   </div>
 
   <div class="ap-content">
@@ -457,6 +459,47 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div id="admin-testimonios-empty" class="ap-status" style="display:none">Todavía no hay testimonios.</div>
     </div>
 
+    <!-- ── TAB CUENTAS ───────────────────────────────────────── -->
+    <div class="ap-pane" id="tab-cuentas">
+      <div class="ap-sec-title">Cuentas creadas</div>
+      <div class="ap-sec-sub">Todas las cuentas que se registraron para poder votar, ordenadas de la más reciente a la más antigua. Usá esto para detectar multicuentas (mismo nombre/foto/fecha de nacimiento repetidos, cuentas creadas en ráfaga en poco tiempo, etc). Eliminar una cuenta le quita el acceso al sitio y borra su voto actual.</div>
+      <div class="ff" style="max-width:340px;margin-bottom:20px">
+        <label>Buscar por nombre, apodo o email</label>
+        <input type="text" id="cu-buscar" placeholder="Escribí para filtrar…" oninput="renderCuentasList()">
+      </div>
+      <div id="cu-total" class="ap-status"></div>
+      <div class="admin-list" id="admin-cuentas-list"></div>
+      <div id="admin-cuentas-empty" class="ap-status" style="display:none">Todavía no se registró ninguna cuenta.</div>
+    </div>
+
+    <!-- ── TAB NOTIFICACIONES ───────────────────────────────────── -->
+    <div class="ap-pane" id="tab-notificaciones">
+      <div class="ap-sec-title">Publicar notificación</div>
+      <div class="ap-sec-sub">Mandá un aviso a todas las cuentas registradas (por ejemplo: se cargaron los resultados del ranking, hay una actualización en la página) o elegí una cuenta puntual si necesitás contactarte con alguien.</div>
+      <div class="form-grid">
+        <div class="ff">
+          <label>Destinatario</label>
+          <select id="nt-destino" onchange="toggleDestinoUsuario()">
+            <option value="todos">Publicar para todos</option>
+            <option value="uno">Elegir una cuenta puntual</option>
+          </select>
+        </div>
+        <div class="ff" id="nt-usuario-wrap" style="display:none">
+          <label>Cuenta</label>
+          <select id="nt-usuario-select"><option value="">Seleccioná una cuenta…</option></select>
+        </div>
+        <div class="ff"><label>Título</label><input type="text" id="nt-titulo" placeholder="Ej: ¡Ya están los resultados del mes!"></div>
+        <div class="ff"><label>Mensaje</label><textarea id="nt-mensaje" rows="3" placeholder="Escribí el mensaje…"></textarea></div>
+        <div>
+          <button class="btn-submit" id="btn-pub-nt" onclick="publicarNotificacion()">Publicar notificación</button>
+          <div class="ap-status" id="status-nt"></div>
+        </div>
+      </div>
+      <div class="admin-sub-label">Últimas notificaciones enviadas</div>
+      <div class="admin-list" id="admin-notif-list"></div>
+      <div id="admin-notif-empty" class="ap-status" style="display:none">Todavía no enviaste ninguna notificación.</div>
+    </div>
+
   </div><!-- /ap-content -->
 </div><!-- /admin-panel -->
 
@@ -477,6 +520,8 @@ let currentEditModelId = null;
 let currentEditInsignias = [];
 let heroPortada = { imagen_url:"", titular:"", subtitulo:"" };
 let toastTimer;
+let allUsuarios = [];
+let allNotificaciones = [];
 
 function initSB() {
   if (!sb) sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -491,6 +536,8 @@ async function doLogin() {
     document.getElementById("admin-panel").classList.add("open");
     document.getElementById("ap-user-email").textContent = "admin";
     await loadData();
+    await loadUsuarios();
+    await loadNotificaciones();
     populateModelSelect();
     populateEditModelSelect();
     fillPortadaForm();
@@ -538,6 +585,8 @@ function switchTab(name, btn) {
   if (name === "ranking") loadCicloInfo();
   if (name === "fama") renderAdminFamaList();
   if (name === "testimonios") renderAdminTestimoniosList();
+  if (name === "cuentas") { loadUsuarios().then(renderCuentasList); }
+  if (name === "notificaciones") { loadNotificaciones().then(renderNotifAdminList); populateUsuarioSelect(); }
 }
 
 function switchSubTab(name, btn) {
@@ -1459,6 +1508,138 @@ function getEmbedShareUrlAdmin(embedCode) {
   const iframe = tmp.querySelector("iframe");
   if (iframe && iframe.src) return iframe.src;
   return null;
+}
+
+// ══════════════════════════════════════════════════════════
+// ─── CUENTAS (usuarios registrados para votar) ──────────────
+// ══════════════════════════════════════════════════════════
+
+async function loadUsuarios() {
+  try {
+    const { data, error } = await sb.from("usuarios").select("*").order("creado_en", { ascending: false });
+    if (!error && data) allUsuarios = data;
+  } catch(e) { console.warn("Error cargando usuarios:", e); }
+}
+
+function fechaHoraLegible(fechaStr) {
+  const d = new Date(fechaStr);
+  return d.toLocaleDateString("es-AR", { day:"2-digit", month:"2-digit", year:"numeric" }) +
+    " — " + d.toLocaleTimeString("es-AR", { hour:"2-digit", minute:"2-digit" });
+}
+
+function renderCuentasList() {
+  const list = document.getElementById("admin-cuentas-list");
+  const empty = document.getElementById("admin-cuentas-empty");
+  const totalEl = document.getElementById("cu-total");
+  if (!list) return;
+
+  const q = (document.getElementById("cu-buscar")?.value || "").trim().toLowerCase();
+  let items = allUsuarios.filter(u => u.activa !== false);
+  if (q) {
+    items = items.filter(u =>
+      (u.nombre||"").toLowerCase().includes(q) ||
+      (u.apellido||"").toLowerCase().includes(q) ||
+      (u.apodo||"").toLowerCase().includes(q) ||
+      (u.email||"").toLowerCase().includes(q)
+    );
+  }
+
+  totalEl.textContent = `${items.length} cuenta${items.length!==1?'s':''} activa${items.length!==1?'s':''} de ${allUsuarios.filter(u=>u.activa!==false).length} en total`;
+
+  if (!items.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+  empty.style.display = "none";
+
+  list.innerHTML = items.map(u => `
+    <div class="admin-list-row">
+      <div class="admin-list-thumb">${u.foto_url ? `<img src="${u.foto_url}" style="width:100%;height:100%;object-fit:cover">` : ""}</div>
+      <div class="admin-list-info">
+        <div class="admin-list-name">${u.nombre||''} ${u.apellido||''} <span style="color:var(--gray-text);font-weight:400">— @${u.apodo||''}</span></div>
+        <div class="admin-list-meta">Nac. ${u.fecha_nacimiento||'—'} · ${u.email||''}</div>
+        <div class="admin-list-meta">Creada: ${fechaHoraLegible(u.creado_en)}</div>
+      </div>
+      <button class="btn-delete" onclick="deleteUsuario('${u.id}','${(u.apodo||'').replace(/'/g,"")}')">Eliminar</button>
+    </div>`).join("");
+}
+
+async function deleteUsuario(id, apodo) {
+  if (!confirm(`¿Eliminar la cuenta de "${apodo}"? Pierde acceso al sitio y su voto actual se borra. Esto no se puede deshacer.`)) return;
+  // Borramos también su(s) voto(s) y el perfil. La credencial de login queda inactiva
+  // porque el sitio exige que exista un perfil "activa=true" en la tabla usuarios para poder usar la cuenta.
+  await sb.from("votos").delete().eq("usuario_id", id);
+  const { error } = await sb.from("usuarios").delete().eq("id", id);
+  if (error) { showToast("Error al eliminar: " + error.message); return; }
+  allUsuarios = allUsuarios.filter(u => u.id !== id);
+  renderCuentasList();
+  showToast("Cuenta eliminada.");
+}
+
+// ══════════════════════════════════════════════════════════
+// ─── NOTIFICACIONES ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+
+async function loadNotificaciones() {
+  try {
+    const { data, error } = await sb.from("notificaciones").select("*").order("creado_en", { ascending: false }).limit(50);
+    if (!error && data) allNotificaciones = data;
+  } catch(e) { console.warn("Error cargando notificaciones:", e); }
+}
+
+function populateUsuarioSelect() {
+  const sel = document.getElementById("nt-usuario-select");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Seleccioná una cuenta…</option>' +
+    allUsuarios.filter(u=>u.activa!==false).map(u => `<option value="${u.id}">${u.nombre} ${u.apellido} — @${u.apodo}</option>`).join("");
+}
+
+function toggleDestinoUsuario() {
+  const destino = document.getElementById("nt-destino").value;
+  document.getElementById("nt-usuario-wrap").style.display = destino === "uno" ? "block" : "none";
+}
+
+async function publicarNotificacion() {
+  const st = document.getElementById("status-nt");
+  const btn = document.getElementById("btn-pub-nt");
+  const destino = document.getElementById("nt-destino").value;
+  const usuarioId = document.getElementById("nt-usuario-select").value;
+  const titulo = document.getElementById("nt-titulo").value.trim();
+  const mensaje = document.getElementById("nt-mensaje").value.trim();
+
+  if (!titulo || !mensaje) { setSt(st, "Completá título y mensaje.", "error"); return; }
+  if (destino === "uno" && !usuarioId) { setSt(st, "Elegí a qué cuenta le llega.", "error"); return; }
+
+  btn.disabled = true; setSt(st, "Publicando…", "");
+  const { data, error } = await sb.from("notificaciones").insert([{
+    usuario_id: destino === "uno" ? usuarioId : null,
+    titulo, mensaje, tipo: "admin", creado_en: new Date().toISOString()
+  }]).select();
+  if (error) { setSt(st, "Error: " + error.message, "error"); btn.disabled = false; return; }
+  allNotificaciones.unshift(data[0]);
+  document.getElementById("nt-titulo").value = "";
+  document.getElementById("nt-mensaje").value = "";
+  setSt(st, destino === "todos" ? "✓ Publicada para todas las cuentas." : "✓ Enviada a esa cuenta.", "ok");
+  btn.disabled = false;
+  renderNotifAdminList();
+}
+
+function renderNotifAdminList() {
+  const list = document.getElementById("admin-notif-list");
+  const empty = document.getElementById("admin-notif-empty");
+  if (!list) return;
+  if (!allNotificaciones.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
+  empty.style.display = "none";
+  list.innerHTML = allNotificaciones.map(n => {
+    const destinoTxt = n.usuario_id
+      ? (allUsuarios.find(u=>u.id===n.usuario_id)?.apodo ? "@"+allUsuarios.find(u=>u.id===n.usuario_id).apodo : "cuenta puntual")
+      : "Todos";
+    return `
+    <div class="admin-list-row">
+      <div class="admin-list-info">
+        <div class="admin-list-name">${n.titulo}</div>
+        <div class="admin-list-meta">${destinoTxt} · ${fechaHoraLegible(n.creado_en)}</div>
+        <div style="font-size:11px;color:#555;margin-top:4px">${n.mensaje}</div>
+      </div>
+    </div>`;
+  }).join("");
 }
 </script>
 </body>
