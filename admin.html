@@ -381,11 +381,27 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 
     <!-- ── TAB EVENTOS ──────────────────────────────────────── -->
     <div class="ap-pane" id="tab-eventos">
+
+      <!-- Widget del clima -->
+      <div style="margin-bottom:32px;border:1px solid var(--gray-mid);padding:20px;background:var(--gray-light)">
+        <div class="ap-sec-title" style="margin-bottom:4px">🌤 Clima del evento</div>
+        <div class="ap-sec-sub" style="margin-bottom:14px">Consultá el pronóstico para la ciudad del evento antes de publicarlo.</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+          <div class="ff" style="flex:1;min-width:200px">
+            <label>Ciudad (ej: Corrientes, AR)</label>
+            <input type="text" id="clima-ciudad" placeholder="Corrientes,AR" value="Corrientes,AR">
+          </div>
+          <button class="btn-submit" style="margin-top:0" onclick="consultarClima()">Ver pronóstico</button>
+        </div>
+        <div id="clima-resultado" style="margin-top:16px;font-size:12px;line-height:1.7;color:#333"></div>
+      </div>
+
       <div class="ap-sec-title">Nuevo Evento</div>
-      <div class="ap-sec-sub">Completá los datos para agregar el evento al carrusel y al ticker.</div>
+      <div class="ap-sec-sub">Completá los datos para agregar el evento al carrusel y al ticker. Los eventos pasados se ocultan automáticamente en el sitio al día siguiente de su fecha.</div>
       <div class="form-grid">
         <div class="ff"><label>Título del evento</label><input type="text" id="e-title" placeholder="Kanime 2026"></div>
         <div class="ff"><label>Fecha</label><input type="date" id="e-date"></div>
+        <div class="ff"><label>Lugar / Dirección</label><input type="text" id="e-lugar" placeholder="Centro de Convenciones, Corrientes"></div>
         <div class="ff">
           <label>URL del banner</label>
           <input type="url" id="e-banner" placeholder="https://…/banner.jpg">
@@ -904,23 +920,60 @@ async function savePortada() {
   btn.disabled = false;
 }
 
+async function consultarClima() {
+  const ciudad = document.getElementById("clima-ciudad").value.trim();
+  const resultado = document.getElementById("clima-resultado");
+  if (!ciudad) { resultado.textContent = "Ingresá una ciudad."; return; }
+  resultado.textContent = "Consultando pronóstico…";
+  try {
+    // Usar Open-Meteo con geocoding primero
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(ciudad)}&count=1&language=es&format=json`);
+    const geoData = await geoRes.json();
+    if (!geoData.results || !geoData.results.length) {
+      resultado.textContent = "No se encontró la ciudad. Probá con el formato: Corrientes,AR";
+      return;
+    }
+    const { latitude, longitude, name, country } = geoData.results[0];
+    const wxRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weathercode&timezone=auto&forecast_days=7&language=es`);
+    const wx = await wxRes.json();
+    const daily = wx.daily;
+    const codes = {
+      0:"☀️ Despejado",1:"🌤 Mayormente despejado",2:"⛅ Parcialmente nublado",3:"☁️ Nublado",
+      45:"🌫 Niebla",48:"🌫 Niebla",51:"🌦 Llovizna leve",53:"🌦 Llovizna",55:"🌧 Llovizna intensa",
+      61:"🌧 Lluvia leve",63:"🌧 Lluvia",65:"🌧 Lluvia intensa",71:"❄️ Nieve leve",73:"❄️ Nieve",
+      80:"🌦 Chubascos",81:"🌦 Chubascos",82:"⛈ Chubascos fuertes",
+      95:"⛈ Tormenta",96:"⛈ Tormenta con granizo",99:"⛈ Tormenta fuerte"
+    };
+    const dias = daily.time.map((fecha, i) => {
+      const d = new Date(fecha+"T00:00:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"});
+      const desc = codes[daily.weathercode[i]] || "—";
+      return `<div style="padding:6px 0;border-bottom:1px solid #eee"><strong>${d}</strong> — ${desc} · ${daily.temperature_2m_min[i]}°↓ ${daily.temperature_2m_max[i]}°↑ · 💧${daily.precipitation_sum[i]}mm</div>`;
+    }).join("");
+    resultado.innerHTML = `<div style="margin-bottom:8px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#888">Pronóstico 7 días — ${name}, ${country}</div>${dias}`;
+  } catch(e) {
+    resultado.textContent = "No se pudo obtener el pronóstico. Verificá tu conexión.";
+  }
+}
+
 async function publishEvent() {
   const st  = document.getElementById("status-e");
   const btn = document.getElementById("btn-pub-e");
   const titulo      = document.getElementById("e-title").value.trim();
   const fecha       = document.getElementById("e-date").value;
+  const lugar       = document.getElementById("e-lugar").value.trim();
   const banner_url  = document.getElementById("e-banner").value.trim();
   const descripcion = document.getElementById("e-desc").value.trim();
   if (!titulo) { setSt(st,"El título es obligatorio.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("eventos").insert([{
-    titulo, fecha_evento: fecha||null, banner_url, descripcion
+    titulo, fecha_evento: fecha||null, lugar: lugar||null, banner_url, descripcion
   }]).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   allEvents.push(data[0]);
   allEvents.sort((a,b)=>new Date(a.fecha_evento)-new Date(b.fecha_evento));
   document.getElementById("e-title").value  = "";
   document.getElementById("e-date").value   = "";
+  document.getElementById("e-lugar").value  = "";
   document.getElementById("e-banner").value = "";
   document.getElementById("e-desc").value   = "";
   setSt(st,`✓ Evento "${titulo}" publicado.`,"ok");
