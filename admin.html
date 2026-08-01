@@ -43,10 +43,25 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 .ap-title{font-family:var(--serif);font-size:22px;font-weight:400}
 .ap-title span{font-style:italic;color:var(--gray-text);font-size:13px;margin-left:12px}
 .ap-user{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--gray-text)}
-.ap-tabs{display:flex;gap:0;border-bottom:1px solid var(--gray-mid);margin:0 60px}
-.ap-tab{background:none;border:none;border-bottom:2px solid transparent;font-family:var(--sans);font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:16px 24px;cursor:pointer;color:var(--gray-text);transition:all var(--ease)}
-.ap-tab.active{border-bottom-color:var(--black);color:var(--black)}
-.ap-content{padding:48px 60px;max-width:700px}
+.ap-body{display:flex;align-items:flex-start}
+.ap-sidebar{width:260px;flex-shrink:0;border-right:1px solid var(--gray-mid);padding:24px 0;position:sticky;top:97px;align-self:flex-start;max-height:calc(100vh - 97px);overflow-y:auto}
+.side-item{border-bottom:1px solid var(--gray-mid)}
+.side-item:last-child{border-bottom:none}
+.side-head{width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;font-family:var(--sans);font-size:10px;letter-spacing:.15em;text-transform:uppercase;padding:18px 24px;cursor:pointer;color:var(--gray-text);display:flex;justify-content:space-between;align-items:center;gap:10px;transition:all var(--ease)}
+.side-head:hover{color:var(--black)}
+.side-head.active{color:var(--black);border-left-color:var(--black);background:var(--gray-light)}
+.side-arrow{font-size:9px;flex-shrink:0;transition:transform var(--ease);color:var(--gray-text)}
+.side-head.open .side-arrow{transform:rotate(180deg)}
+.side-children{max-height:0;overflow:hidden;transition:max-height var(--ease);display:flex;flex-direction:column;background:var(--gray-light)}
+.side-children.open{max-height:320px}
+.side-child{width:100%;text-align:left;background:none;border:none;border-left:3px solid transparent;font-family:var(--sans);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:14px 24px 14px 40px;cursor:pointer;color:var(--gray-text);transition:all var(--ease)}
+.side-child:hover{color:var(--black)}
+.side-child.active{color:var(--black);border-left-color:var(--gold)}
+.ap-content{padding:48px 60px;max-width:700px;flex:1;min-width:0}
+@media(max-width:900px){
+  .ap-body{flex-direction:column}
+  .ap-sidebar{width:100%;position:static;max-height:none;border-right:none;border-bottom:1px solid var(--black)}
+}
 .ap-pane{display:none}
 .ap-pane.active{display:block}
 .ap-sec-title{font-family:var(--serif);font-size:20px;font-weight:400;margin-bottom:8px}
@@ -124,7 +139,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media(max-width:900px){
-  .ap-header,.ap-tabs{padding-left:24px;padding-right:24px}
+  .ap-header{padding-left:24px;padding-right:24px}
   .ap-content{padding:32px 24px}
 }
 </style>
@@ -155,15 +170,39 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <button id="ap-logout" onclick="doLogout()">Cerrar sesión</button>
   </div>
 
-  <div class="ap-tabs">
-    <button class="ap-tab active" onclick="switchTab('modelos',this)">Modelos</button>
-    <button class="ap-tab" onclick="switchTab('portada',this)">Editar Portada</button>
-    <button class="ap-tab" onclick="switchTab('eventos',this)">Carrusel / Eventos</button>
-    <button class="ap-tab" onclick="switchTab('ranking',this)">Ranking</button>
-    <button class="ap-tab" onclick="switchTab('fama',this)">Salón de la Fama</button>
-    <button class="ap-tab" onclick="switchTab('testimonios',this)">Testimonios</button>
-    <button class="ap-tab" onclick="switchTab('cuentas',this)">Cuentas</button>
-    <button class="ap-tab" onclick="switchTab('notificaciones',this)">Notificaciones</button>
+  <div class="ap-body">
+
+  <div class="ap-sidebar" id="ap-sidebar">
+    <div class="side-item">
+      <button class="side-head active open" id="side-head-modelos" onclick="toggleSide('modelos')">Modelos<span class="side-arrow">▾</span></button>
+      <div class="side-children open" id="side-children-modelos">
+        <button class="side-child active" onclick="selectSubTab('modelos','crear',this)">Crear Perfil</button>
+        <button class="side-child" onclick="selectSubTab('modelos','editar',this)">Editar Perfil</button>
+        <button class="side-child" onclick="selectSubTab('modelos','foto',this)">Subir Foto</button>
+        <button class="side-child" onclick="selectSubTab('modelos','gestionar',this)">Gestionar / Eliminar</button>
+      </div>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-portada" onclick="toggleSide('portada')">Editar Portada<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-eventos" onclick="toggleSide('eventos')">Carrusel / Eventos<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-ranking" onclick="toggleSide('ranking')">Ranking<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-fama" onclick="toggleSide('fama')">Salón de la Fama<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-testimonios" onclick="toggleSide('testimonios')">Testimonios<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-cuentas" onclick="toggleSide('cuentas')">Cuentas<span class="side-arrow">▾</span></button>
+    </div>
+    <div class="side-item">
+      <button class="side-head" id="side-head-notificaciones" onclick="toggleSide('notificaciones')">Notificaciones<span class="side-arrow">▾</span></button>
+    </div>
   </div>
 
   <div class="ap-content">
@@ -172,13 +211,6 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     <div class="ap-pane active" id="tab-modelos">
       <div class="ap-sec-title">Modelos</div>
       <div class="ap-sec-sub">Cada modelo tiene un único perfil. Crealo una vez y después sumale fotos a su galería personal.</div>
-
-      <div class="sub-tabs">
-        <button class="sub-tab active" onclick="switchSubTab('crear',this)">Crear Perfil</button>
-        <button class="sub-tab" onclick="switchSubTab('editar',this)">Editar Perfil</button>
-        <button class="sub-tab" onclick="switchSubTab('foto',this)">Subir Foto</button>
-        <button class="sub-tab" onclick="switchSubTab('gestionar',this)">Gestionar / Eliminar</button>
-      </div>
 
       <!-- Crear perfil -->
       <div class="sub-pane active" id="sub-crear">
@@ -194,6 +226,14 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
           <div class="ff">
             <label>Link de Instagram (opcional)</label>
             <input type="url" id="m-instagram" placeholder="https://instagram.com/usuario">
+          </div>
+          <div class="ff">
+            <label>Administrador del perfil (opcional)</label>
+            <input type="text" id="m-admin" placeholder="Nombre de quien administra el perfil">
+          </div>
+          <div class="ff">
+            <label>CPU / dispositivo (opcional)</label>
+            <input type="text" id="m-cpu" placeholder="Ej: Snapdragon, MediaTek">
           </div>
           <div>
             <button class="btn-submit" id="btn-pub-m" onclick="publishModel()">Crear Perfil</button>
@@ -221,6 +261,14 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
               <div class="ff">
                 <label>Link de Instagram (opcional)</label>
                 <input type="url" id="em-instagram" placeholder="https://instagram.com/usuario">
+              </div>
+              <div class="ff">
+                <label>Administrador del perfil (opcional)</label>
+                <input type="text" id="em-admin" placeholder="Nombre de quien administra el perfil">
+              </div>
+              <div class="ff">
+                <label>CPU / dispositivo (opcional)</label>
+                <input type="text" id="em-cpu" placeholder="Ej: Snapdragon, MediaTek">
               </div>
               <div class="ff">
                 <label>Insignias del podio</label>
@@ -384,7 +432,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
 
       <!-- Widget del clima -->
       <div style="margin-bottom:32px;border:1px solid var(--gray-mid);padding:20px;background:var(--gray-light)">
-        <div class="ap-sec-title" style="margin-bottom:4px">🌤 Clima del evento</div>
+        <div class="ap-sec-title" style="margin-bottom:4px">Clima del evento</div>
         <div class="ap-sec-sub" style="margin-bottom:14px">Consultá el pronóstico para la ciudad del evento antes de publicarlo.</div>
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
           <div class="ff" style="flex:1;min-width:200px">
@@ -438,7 +486,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div class="admin-sub-label" style="margin-top:32px">Ciclo activo ahora</div>
       <div id="ciclo-activo-info" class="ap-status">Cargando…</div>
       <div style="margin-top:24px;padding:20px;border:1px solid #c0392b;background:#fff5f5">
-        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#c0392b;margin-bottom:8px">⚠ Zona de peligro</div>
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#c0392b;margin-bottom:8px">Zona de peligro</div>
         <div style="font-size:11px;color:#555;margin-bottom:16px;line-height:1.6">Cerrar el ciclo guarda las insignias del top 3 y resetea todos los votos a 0. No se puede deshacer.</div>
         <button class="btn-submit" style="background:#c0392b" onclick="cerrarCicloAdmin()">Cerrar ciclo y resetear votos</button>
         <div class="ap-status" id="status-rk-close"></div>
@@ -450,7 +498,7 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
       <div class="ap-sec-title">Salón de la Fama</div>
       <div class="ap-sec-sub">Acá queda el registro histórico de todos los perfiles que alguna vez llegaron al Top 3, sin importar el ciclo. Se carga solo cada vez que cerrás un ciclo. Desde acá podés descargar, cuando quieras, la placa JPG especial de podio (distinta a la que descarga cada modelo desde su propio perfil).</div>
       <div id="fama-recientes" style="display:none;margin-bottom:28px;padding:20px;border:1px solid var(--gold);background:#fffdf5">
-        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">✦ Recién cerrado — descargá las placas ahora</div>
+        <div style="font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Recién cerrado — descargá las placas ahora</div>
         <div id="fama-recientes-list" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
       <div class="admin-list" id="admin-fama-list"></div>
@@ -517,6 +565,8 @@ body{font-family:var(--sans);background:var(--white);color:var(--black);font-siz
     </div>
 
   </div><!-- /ap-content -->
+
+  </div><!-- /ap-body -->
 </div><!-- /admin-panel -->
 
 <!-- TOAST -->
@@ -590,10 +640,11 @@ async function loadData() {
   } catch(e) { console.warn("Error Supabase:", e); }
 }
 
-function switchTab(name, btn) {
-  document.querySelectorAll(".ap-tab").forEach(b=>b.classList.remove("active"));
+function switchTab(name) {
+  document.querySelectorAll(".side-head").forEach(b=>b.classList.remove("active"));
   document.querySelectorAll(".ap-pane").forEach(p=>p.classList.remove("active"));
-  btn.classList.add("active");
+  const head = document.getElementById("side-head-"+name);
+  if (head) head.classList.add("active");
   document.getElementById("tab-"+name).classList.add("active");
   if (name === "modelos") { populateModelSelect(); renderAdminModelosList(); }
   if (name === "portada") fillPortadaForm();
@@ -605,14 +656,41 @@ function switchTab(name, btn) {
   if (name === "notificaciones") { loadNotificaciones().then(renderNotifAdminList); populateUsuarioSelect(); }
 }
 
-function switchSubTab(name, btn) {
-  document.querySelectorAll(".sub-tab").forEach(b=>b.classList.remove("active"));
+function switchSubTab(name) {
   document.querySelectorAll(".sub-pane").forEach(p=>p.classList.remove("active"));
-  btn.classList.add("active");
   document.getElementById("sub-"+name).classList.add("active");
   if (name === "foto") { populateModelSelect(); renderAdminFotosList(document.getElementById("f-modelo").value); }
   if (name === "gestionar") renderAdminModelosList();
   if (name === "editar") populateEditModelSelect();
+}
+
+/* Menú lateral tipo acordeón: tocás un ítem y se despliegan sus opciones debajo */
+function toggleSide(name) {
+  const head = document.getElementById("side-head-"+name);
+  const children = document.getElementById("side-children-"+name);
+
+  // Cierra cualquier otro grupo abierto
+  document.querySelectorAll(".side-head").forEach(b => { if (b !== head) b.classList.remove("open"); });
+  document.querySelectorAll(".side-children").forEach(c => { if (c !== children) c.classList.remove("open"); });
+
+  if (children) {
+    // Tiene submenú: alterna abrir/cerrar
+    const willOpen = !head.classList.contains("open");
+    head.classList.toggle("open", willOpen);
+    children.classList.toggle("open", willOpen);
+  } else {
+    head.classList.add("open");
+  }
+
+  switchTab(name);
+}
+
+function selectSubTab(tabName, subName, btn) {
+  const container = document.getElementById("side-children-"+tabName);
+  if (container) container.querySelectorAll(".side-child").forEach(b=>b.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  switchTab(tabName);
+  switchSubTab(subName);
 }
 
 function populateEditModelSelect() {
@@ -635,6 +713,8 @@ function loadModelForEdit(id) {
   document.getElementById("em-desc").value = m.descripcion || "";
   document.getElementById("em-embed").value = m.foto_perfil_embed || "";
   document.getElementById("em-instagram").value = m.instagram_url || "";
+  document.getElementById("em-admin").value = m.administrador || "";
+  document.getElementById("em-cpu").value = m.cpu || "";
   currentEditModelId = id;
   currentEditInsignias = Array.isArray(m.insignias) ? [...m.insignias] : [];
   renderEmInsignias();
@@ -650,7 +730,7 @@ function renderEmInsignias() {
   if (!currentEditInsignias.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
   list.innerHTML = currentEditInsignias.map((b, i) => `
-    <span class="insignia-chip">🏆 ${b} <button type="button" onclick="quitarInsignia(${i})" title="Quitar insignia">✕</button></span>
+    <span class="insignia-chip">${b} <button type="button" onclick="quitarInsignia(${i})" title="Quitar insignia">×</button></span>
   `).join("");
 }
 
@@ -688,15 +768,17 @@ async function updateModel() {
   const descripcion = document.getElementById("em-desc").value.trim();
   const foto_perfil_embed = document.getElementById("em-embed").value.trim();
   const instagram_url = document.getElementById("em-instagram").value.trim();
+  const administrador = document.getElementById("em-admin").value.trim();
+  const cpu = document.getElementById("em-cpu").value.trim();
   if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("modelos").update({
-    nombre, codigo, descripcion, foto_perfil_embed, instagram_url
+    nombre, codigo, descripcion, foto_perfil_embed, instagram_url, administrador, cpu
   }).eq("id", id).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   const idx = allModels.findIndex(x => String(x.id) === String(id));
   if (idx > -1) allModels[idx] = data[0];
-  setSt(st,"✓ Perfil actualizado.","ok");
+  setSt(st,"Perfil actualizado.","ok");
   btn.disabled = false;
   populateModelSelect();
   populateEditModelSelect();
@@ -788,7 +870,7 @@ function layerRowTemplate(item, idx, kind) {
           <option value="right" ${item.align === 'right' ? 'selected' : ''}>Der.</option>
         </select>
       </div>
-      <button type="button" class="btn-mini-del" onclick="removeLayerRow('${kind}',${idx})">✕</button>
+      <button type="button" class="btn-mini-del" onclick="removeLayerRow('${kind}',${idx})">×</button>
     </div>`;
 }
 
@@ -915,7 +997,7 @@ async function savePortada() {
   }]).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   heroPortada = data[0];
-  setSt(st,"✓ Portada actualizada.","ok");
+  setSt(st,"Portada actualizada.","ok");
   showToast("Portada guardada");
   btn.disabled = false;
 }
@@ -938,16 +1020,16 @@ async function consultarClima() {
     const wx = await wxRes.json();
     const daily = wx.daily;
     const codes = {
-      0:"☀️ Despejado",1:"🌤 Mayormente despejado",2:"⛅ Parcialmente nublado",3:"☁️ Nublado",
-      45:"🌫 Niebla",48:"🌫 Niebla",51:"🌦 Llovizna leve",53:"🌦 Llovizna",55:"🌧 Llovizna intensa",
-      61:"🌧 Lluvia leve",63:"🌧 Lluvia",65:"🌧 Lluvia intensa",71:"❄️ Nieve leve",73:"❄️ Nieve",
-      80:"🌦 Chubascos",81:"🌦 Chubascos",82:"⛈ Chubascos fuertes",
-      95:"⛈ Tormenta",96:"⛈ Tormenta con granizo",99:"⛈ Tormenta fuerte"
+      0:"Despejado",1:"Mayormente despejado",2:"Parcialmente nublado",3:"Nublado",
+      45:"Niebla",48:"Niebla",51:"Llovizna leve",53:"Llovizna",55:"Llovizna intensa",
+      61:"Lluvia leve",63:"Lluvia",65:"Lluvia intensa",71:"Nieve leve",73:"Nieve",
+      80:"Chubascos",81:"Chubascos",82:"Chubascos fuertes",
+      95:"Tormenta",96:"Tormenta con granizo",99:"Tormenta fuerte"
     };
     const dias = daily.time.map((fecha, i) => {
       const d = new Date(fecha+"T00:00:00").toLocaleDateString("es-AR",{weekday:"short",day:"numeric",month:"short"});
       const desc = codes[daily.weathercode[i]] || "—";
-      return `<div style="padding:6px 0;border-bottom:1px solid #eee"><strong>${d}</strong> — ${desc} · ${daily.temperature_2m_min[i]}°↓ ${daily.temperature_2m_max[i]}°↑ · 💧${daily.precipitation_sum[i]}mm</div>`;
+      return `<div style="padding:6px 0;border-bottom:1px solid #eee"><strong>${d}</strong> — ${desc} · ${daily.temperature_2m_min[i]}° / ${daily.temperature_2m_max[i]}° · Precip: ${daily.precipitation_sum[i]}mm</div>`;
     }).join("");
     resultado.innerHTML = `<div style="margin-bottom:8px;font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#888">Pronóstico 7 días — ${name}, ${country}</div>${dias}`;
   } catch(e) {
@@ -960,25 +1042,184 @@ async function publishEvent() {
   const btn = document.getElementById("btn-pub-e");
   const titulo      = document.getElementById("e-title").value.trim();
   const fecha       = document.getElementById("e-date").value;
-  const lugar       = document.getElementById("e-lugar").value.trim();
+  const lugarEl     = document.getElementById("e-lugar");
+  const lugar       = lugarEl ? lugarEl.value.trim() : "";
   const banner_url  = document.getElementById("e-banner").value.trim();
   const descripcion = document.getElementById("e-desc").value.trim();
   if (!titulo) { setSt(st,"El título es obligatorio.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
-  const { data, error } = await sb.from("eventos").insert([{
+
+  // Intentamos con 'lugar'. Si la columna no existe, reintentamos sin ella.
+  let data, error;
+  ({ data, error } = await sb.from("eventos").insert([{
     titulo, fecha_evento: fecha||null, lugar: lugar||null, banner_url, descripcion
-  }]).select();
+  }]).select());
+  if (error && (error.message.toLowerCase().includes("lugar") || error.code === "42703" || error.code === "PGRST204")) {
+    setSt(st,"Columna 'lugar' no existe aún en Supabase — guardando sin ella. Creá la columna para usarla.","");
+    ({ data, error } = await sb.from("eventos").insert([{
+      titulo, fecha_evento: fecha||null, banner_url, descripcion
+    }]).select());
+  }
+
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   allEvents.push(data[0]);
   allEvents.sort((a,b)=>new Date(a.fecha_evento)-new Date(b.fecha_evento));
   document.getElementById("e-title").value  = "";
   document.getElementById("e-date").value   = "";
-  document.getElementById("e-lugar").value  = "";
+  if (lugarEl) lugarEl.value = "";
   document.getElementById("e-banner").value = "";
   document.getElementById("e-desc").value   = "";
   setSt(st,`✓ Evento "${titulo}" publicado.`,"ok");
   btn.disabled = false;
   renderAdminEventosList();
+}
+
+// ── DESCARGA FOLLETO DE EVENTO (JPG A4 apaisado, estilo editorial) ──
+async function descargarFolletoEvento(evId) {
+  const ev = allEvents.find(e => String(e.id) === String(evId));
+  if (!ev) { showToast("Evento no encontrado"); return; }
+  showToast("Generando folleto…");
+  try {
+    if (document.fonts && document.fonts.load) {
+      await Promise.all([
+        document.fonts.load("italic 700 72px 'Playfair Display'"),
+        document.fonts.load("600 18px 'Montserrat'"),
+        document.fonts.load("400 16px 'Montserrat'")
+      ]).catch(()=>{});
+    }
+    const W = 2480, H = 1754;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    // Imagen del banner si existe
+    if (ev.banner_url) {
+      try {
+        const img = await loadImageCORS(ev.banner_url);
+        const scale = Math.max(W / img.width, H / img.height);
+        const dw = img.width * scale, dh = img.height * scale;
+        ctx.drawImage(img, (W-dw)/2, (H-dh)/2, dw, dh);
+        ctx.fillStyle = "rgba(0,0,0,0.72)";
+        ctx.fillRect(0, 0, W, H);
+      } catch(e2) {}
+    }
+
+    // Degradado lateral izquierdo (para zona de texto)
+    const sideGrad = ctx.createLinearGradient(0, 0, W * 0.6, 0);
+    sideGrad.addColorStop(0, "rgba(0,0,0,0.95)");
+    sideGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sideGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Marco dorado
+    const inset = 40;
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(inset, inset, W - inset*2, H - inset*2);
+    ctx.strokeRect(inset+14, inset+14, W - (inset+14)*2, H - (inset+14)*2);
+
+    // Logo "imar source" arriba izq
+    ctx.fillStyle = "#D4AF37";
+    ctx.font = "italic 700 52px 'Playfair Display', Georgia, serif";
+    ctx.textAlign = "left";
+    ctx.fillText("imar source", inset + 70, inset + 90);
+
+    // Etiqueta "EVENTO"
+    ctx.fillStyle = "rgba(212,175,55,0.75)";
+    ctx.font = "500 22px 'Montserrat', Helvetica, sans-serif";
+    ctx.fillText("E  V  E  N  T  O", inset + 70, inset + 130);
+
+    // Divisor dorado
+    ctx.strokeStyle = "#D4AF37";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(inset + 70, inset + 150);
+    ctx.lineTo(inset + 300, inset + 150);
+    ctx.stroke();
+
+    // Título del evento (lado izquierdo, grande, multi-línea)
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "italic 700 120px 'Playfair Display', Georgia, serif";
+    ctx.shadowColor = "rgba(0,0,0,0.9)";
+    ctx.shadowBlur = 30;
+    const titleWords = (ev.titulo || "").split(" ");
+    let tLine = "", tLines = [];
+    const maxTW = W * 0.55;
+    for (const w of titleWords) {
+      const test = tLine ? tLine + " " + w : w;
+      if (ctx.measureText(test).width > maxTW && tLine) { tLines.push(tLine); tLine = w; }
+      else tLine = test;
+    }
+    if (tLine) tLines.push(tLine);
+    const titleStartY = H / 2 - (tLines.length - 1) * 60;
+    tLines.forEach((l, i) => ctx.fillText(l, inset + 70, titleStartY + i * 130));
+    ctx.shadowBlur = 0;
+
+    // Fecha
+    const fechaStr = ev.fecha_evento
+      ? new Date(ev.fecha_evento + "T00:00:00").toLocaleDateString("es-AR", {weekday:"long",day:"numeric",month:"long",year:"numeric"})
+      : "";
+    if (fechaStr) {
+      ctx.fillStyle = "#D4AF37";
+      ctx.font = "600 32px 'Montserrat', Helvetica, sans-serif";
+      ctx.fillText(fechaStr.toUpperCase(), inset + 70, titleStartY + tLines.length * 130 + 20);
+    }
+
+    // Lugar si existe
+    const lugarTxt = ev.lugar || "";
+    if (lugarTxt) {
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "400 28px 'Montserrat', Helvetica, sans-serif";
+      ctx.fillText(lugarTxt, inset + 70, titleStartY + tLines.length * 130 + 72);
+    }
+
+    // Descripción (abajo izquierdo, varias líneas, max 3)
+    if (ev.descripcion) {
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "300 26px 'Montserrat', Helvetica, sans-serif";
+      const descW = W * 0.52;
+      const descWords = ev.descripcion.split(" ");
+      let dl = "", dLines = [];
+      for (const w of descWords) {
+        const t = dl ? dl + " " + w : w;
+        if (ctx.measureText(t).width > descW && dl) { dLines.push(dl); if (dLines.length >= 3) break; dl = w; }
+        else dl = t;
+      }
+      if (dl && dLines.length < 3) dLines.push(dl);
+      const descY = H - inset - 170;
+      dLines.forEach((l, i) => ctx.fillText(l, inset + 70, descY + i * 38));
+    }
+
+    // Interesados (abajo)
+    if (ev.interesados) {
+      ctx.fillStyle = "rgba(212,175,55,0.85)";
+      ctx.font = "600 26px 'Montserrat', Helvetica, sans-serif";
+      ctx.fillText(`★ ${ev.interesados} personas interesadas`, inset + 70, H - inset - 70);
+    }
+
+    // Pie
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    ctx.font = "400 20px 'Montserrat', Helvetica, sans-serif";
+    ctx.fillText("imarxda.github.io/imarsource", inset + 70, H - inset - 30);
+
+    canvas.toBlob(blob => {
+      if (!blob) { showToast("No se pudo generar el folleto"); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `folleto-${slugify(ev.titulo || "evento")}.jpg`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      showToast("¡Folleto descargado!");
+    }, "image/jpeg", 0.95);
+
+  } catch(e) {
+    console.error(e);
+    showToast("No se pudo generar el folleto.");
+  }
 }
 
 function renderAdminEventosList() {
@@ -997,6 +1238,7 @@ function renderAdminEventosList() {
         <div class="admin-list-name">${ev.titulo}</div>
         <div class="admin-list-meta">${d} · ${ev.interesados||0} interesados</div>
       </div>
+      <button class="btn-submit" style="padding:8px 14px;font-size:8px;margin-right:8px;white-space:nowrap" onclick="descargarFolletoEvento('${ev.id}')">Folleto JPG</button>
       <button class="btn-delete" onclick="deleteEvent('${ev.id}','${ev.titulo.replace(/'/g,"\\'")}')">Eliminar</button>
     </div>`;
   }).join("");
@@ -1019,10 +1261,12 @@ async function publishModel() {
   const descripcion   = document.getElementById("m-desc").value.trim();
   const embed         = document.getElementById("m-embed").value.trim();
   const instagram_url = document.getElementById("m-instagram").value.trim();
+  const administrador = document.getElementById("m-admin").value.trim();
+  const cpu            = document.getElementById("m-cpu").value.trim();
   if (!nombre || !codigo) { setSt(st,"Nombre y código son obligatorios.","error"); return; }
   btn.disabled = true; setSt(st,"Guardando…","");
   const { data, error } = await sb.from("modelos").insert([{
-    nombre, codigo, descripcion, foto_perfil_embed: embed, instagram_url, likes_mes: 0, creado_en: new Date().toISOString()
+    nombre, codigo, descripcion, foto_perfil_embed: embed, instagram_url, administrador, cpu, likes_mes: 0, creado_en: new Date().toISOString()
   }]).select();
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
   allModels.push(data[0]);
@@ -1032,7 +1276,9 @@ async function publishModel() {
   document.getElementById("m-desc").value      = "";
   document.getElementById("m-embed").value     = "";
   document.getElementById("m-instagram").value = "";
-  setSt(st,`✓ Perfil de "${nombre}" creado correctamente.`,"ok");
+  document.getElementById("m-admin").value     = "";
+  document.getElementById("m-cpu").value       = "";
+  setSt(st,`Perfil de "${nombre}" creado correctamente.`,"ok");
   btn.disabled = false;
   populateModelSelect();
   populateEditModelSelect();
@@ -1063,7 +1309,7 @@ async function uploadFoto() {
   allFotos.push(data[0]);
   document.getElementById("f-embed").value = "";
   const m = allModels.find(x=>String(x.id)===String(modeloId));
-  setSt(st,`✓ Foto agregada a la galería de "${m?m.nombre:'el modelo'}".`,"ok");
+  setSt(st,`Foto agregada a la galería de "${m?m.nombre:'el modelo'}".`,"ok");
   btn.disabled = false;
   renderAdminFotosList(modeloId);
 }
@@ -1167,7 +1413,7 @@ async function crearCiclo() {
     nombre, fecha_inicio: inicio, fecha_cierre: cierre, activo: true
   }]);
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
-  setSt(st,`✓ Ciclo "${nombre}" creado y activado.`,"ok");
+  setSt(st,`Ciclo "${nombre}" creado y activado.`,"ok");
   btn.disabled = false;
   document.getElementById("rk-nombre").value = "";
   loadCicloInfo();
@@ -1201,7 +1447,7 @@ async function cerrarCicloAdmin() {
     // 2) Cerrar el ciclo como siempre (guarda insignias en modelos y resetea votos).
     const { error } = await sb.rpc("cerrar_ciclo_y_resetear");
     if (error) { setSt(st,"Error: "+error.message,"error"); return; }
-    setSt(st,"✓ Ciclo cerrado. Votos reseteados. Salón de la Fama actualizado.","ok");
+    setSt(st,"Ciclo cerrado. Votos reseteados. Salón de la Fama actualizado.","ok");
 
     await loadData();
     renderAdminModelosList();
@@ -1216,7 +1462,7 @@ function mostrarFamaRecientes(rows) {
   const list = document.getElementById("fama-recientes-list");
   if (!box || !list) return;
   if (!rows || !rows.length) { box.style.display = "none"; return; }
-  const medalla = { 1: "🥇", 2: "🥈", 3: "🥉" };
+  const medalla = { 1: "1°", 2: "2°", 3: "3°" };
   list.innerHTML = rows.map(f => `
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
       <div style="font-size:12px">${medalla[f.puesto]||''} <strong>${f.nombre}</strong> <span style="color:var(--gray-text)">${f.codigo}</span></div>
@@ -1236,7 +1482,7 @@ async function publishTestimonio() {
   btn.disabled = true; setSt(st,"Guardando…","");
   const { error } = await sb.from("testimonios").insert([{ modelo_nombre, texto, orden, activo: true }]);
   if (error) { setSt(st,"Error: "+error.message,"error"); btn.disabled=false; return; }
-  setSt(st,`✓ Testimonio de "${modelo_nombre}" agregado.`,"ok");
+  setSt(st,`Testimonio de "${modelo_nombre}" agregado.`,"ok");
   btn.disabled = false;
   document.getElementById("t-nombre").value = "";
   document.getElementById("t-texto").value  = "";
@@ -1254,7 +1500,7 @@ async function renderAdminTestimoniosList() {
     list.innerHTML = data.map(t => `
       <div class="admin-list-row">
         <div class="admin-list-info">
-          <div class="admin-list-name">${t.modelo_nombre} ${t.activo ? '✓' : '(inactivo)'}</div>
+          <div class="admin-list-name">${t.modelo_nombre} ${t.activo ? '(activo)' : '(inactivo)'}</div>
           <div class="admin-list-meta" style="white-space:normal;line-height:1.4">"${t.texto.slice(0,80)}…"</div>
         </div>
         <button class="btn-delete" onclick="deleteTestimonio(${t.id})">Eliminar</button>
@@ -1284,7 +1530,7 @@ async function renderAdminFamaList() {
     allFama = data || [];
     if (!allFama.length) { list.innerHTML = ""; empty.style.display = "block"; return; }
     empty.style.display = "none";
-    const medalla = { 1: "🥇", 2: "🥈", 3: "🥉" };
+    const medalla = { 1: "1°", 2: "2°", 3: "3°" };
     list.innerHTML = allFama.map(f => `
       <div class="admin-list-row">
         <div class="admin-list-thumb"><div class="embed-box" id="fama-th-${f.id}"></div></div>
@@ -1483,7 +1729,7 @@ async function descargarJPGGanadora(famaId) {
     ctx.textAlign = "center";
     ctx.fillStyle = "rgba(255,255,255,.75)";
     ctx.font = "600 14px 'Montserrat', Helvetica, sans-serif";
-    fillTextSpaced(ctx, "✦ SALÓN DE LA FAMA · " + (f.ciclo_nombre || "").toUpperCase() + " ✦", W/2, cursorY, 3.5);
+    fillTextSpaced(ctx, "SALÓN DE LA FAMA · " + (f.ciclo_nombre || "").toUpperCase(), W/2, cursorY, 3.5);
     cursorY += 40;
 
     // Marco metálico + "TOP N DEL MES" — según puesto
@@ -1503,7 +1749,7 @@ async function descargarJPGGanadora(famaId) {
     ctx.textAlign = "center";
     ctx.fillStyle = GOLD_LIGHT;
     ctx.font = "600 26px 'Montserrat', Helvetica, sans-serif";
-    fillTextSpaced(ctx, "✦ " + style.label + " ✦", W/2, cursorY, 6);
+    fillTextSpaced(ctx, style.label, W/2, cursorY, 6);
     cursorY += 56;
 
     // Nombre
@@ -1669,7 +1915,7 @@ async function publicarNotificacion() {
   allNotificaciones.unshift(data[0]);
   document.getElementById("nt-titulo").value = "";
   document.getElementById("nt-mensaje").value = "";
-  setSt(st, destino === "todos" ? "✓ Publicada para todas las cuentas." : "✓ Enviada a esa cuenta.", "ok");
+  setSt(st, destino === "todos" ? "Publicada para todas las cuentas." : "Enviada a esa cuenta.", "ok");
   btn.disabled = false;
   renderNotifAdminList();
 }
